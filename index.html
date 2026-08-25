@@ -4,10 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Watch Lounge</title>
-    <!-- REPAIRED: Full working URL for the HLS video decoding engine -->
-    <script src="https://jsdelivr.net"></script>
-    <!-- REPAIRED: Full working URL for the official interactive Twitch player -->
-    <script src="https://twitch.tv"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://player.twitch.tv/js/embed/v1.js"></script>
     <style>
         body { margin: 0; background: #0e0e10; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
         .box { width: 100%; max-width: 480px; margin-bottom: 15px; position: relative; }
@@ -18,29 +16,25 @@
     </style>
 </head>
 <body>
-
     <div class="box">
         <h4>1. ACTIVE TWITCH VERIFICATION FEED</h4>
         <div id="twitch-frame"></div>
     </div>
-
     <div class="box" id="portal">
         <h4>2. PRIVATE COMPANION STREAM</h4>
         <div id="gate">⚠️ STREAM LOCKED<br>Unpause and unmute the Twitch frame above to watch!</div>
         <video id="private-feed" controls playsinline></video>
     </div>
-
     <script>
         // CONFIGURATION: Set your Twitch channel and paste your Pinggy HTTPS link
         const CHANNEL_NAME = 'fraudvlent';
         const STREAM_SOURCE = 'https://jbmes-98-145-11-58.run.pinggy-free.link/live/watchparty/index.m3u8';
-
         const twOptions = { width: '100%', height: 240, channel: CHANNEL_NAME, parent: [window.location.hostname] };
         const twPlayer = new Twitch.Player("twitch-frame", twOptions);
         const vid = document.getElementById('private-feed');
         const gate = document.getElementById('gate');
 
-        if (HLS.isSupported()) {
+        if (Hls.isSupported()) {
             const hls = new Hls();
             hls.loadSource(STREAM_SOURCE);
             hls.attachMedia(vid);
@@ -48,15 +42,18 @@
             vid.src = STREAM_SOURCE;
         }
 
-        // Enforcement loop: verifies Twitch state every 1000ms
-        setInterval(() => {
-            if (twPlayer.isPaused() || twPlayer.getMuted() || twPlayer.getVolume() === 0) {
-                gate.style.display = 'flex';
-                vid.pause();
-            } else {
-                gate.style.display = 'none';
-            }
-        }, 1000);
+        // Wait for the Twitch embed to actually finish loading before polling
+        // it — calling isPaused()/getMuted() too early can throw errors.
+        twPlayer.addEventListener(Twitch.Player.READY, () => {
+            setInterval(() => {
+                if (twPlayer.isPaused() || twPlayer.getMuted() || twPlayer.getVolume() === 0) {
+                    gate.style.display = 'flex';
+                    vid.pause();
+                } else {
+                    gate.style.display = 'none';
+                }
+            }, 1000);
+        });
     </script>
 </body>
 </html>
