@@ -1,141 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private Watch Party Portal</title>
-<!-- Include the HLS Video Player Library -
-<script src="https://jsdelivr.net"></script>
-<!-- Include the Official Twitch Embed Library -
-<script src="https://twitch.tv"></script>
-<style>
-body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-.player-container { width: 100%; max-width: 500px; margin-bottom: 10px; position: relative; }
-h3 { margin: 5px 0; font-size: 14px; text-align: center; color: #a970ff; }
-
-private-wrapper { position: relative; }
-1
-2
-3
-4
-5
-6
-7
-8
-    #lock-overlay {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.9); display: flex; justify-content: center;
-        align-items: center; text-align: center; padding: 20px; box-sizing: border-box;
-        font-weight: bold; color: #ff4a4a; font-size: 16px; z-index: 10; display: none;
-    }
-    video { width: 100%; background: black; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Watch Lounge</title>
+    <script src="https://jsdelivr.net"></script>
+    <script src="https://twitch.tv"></script>
+    <style>
+        body { margin: 0; background: #0e0e10; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .box { width: 100%; max-width: 480px; margin-bottom: 15px; position: relative; }
+        h4 { margin: 8px 0; text-align: center; color: #a970ff; font-size: 14px; }
+        #portal { position: relative; }
+        #gate { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; text-align: center; font-weight: bold; color: #ff4f4f; padding: 20px; box-sizing: border-box; z-index: 100; display: none; }
+        video { width: 100%; background: black; }
+    </style>
 </head>
 <body>
 
- 1
- 2
- 3
- 4
- 5
- 6
- 7
- 8
- 9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-<!-- 1. TWITCH PLAYER EMBED -->
-<div class="player-container">
-    <h3>1. Keep Twitch Active & Unmuted</h3>
-    <div id="twitch-player"></div>
-</div>
+    <div class="box">
+        <h4>1. ACTIVE TWITCH VERIFICATION FEED</h4>
+        <div id="twitch-frame"></div>
+    </div>
 
-<!-- 2. PRIVATE HLS MOVIE PLAYER -->
-<div class="player-container" id="private-wrapper">
-    <h3>2. Your Private Screen Share</h3>
-    <div id="lock-overlay">⚠️ ACCESS LOCKED!<br>You must unpause and unmute the Twitch stream above to watch!</div>
-    <video id="private-video" controls playsinline></video>
-</div>
+    <div class="box" id="portal">
+        <h4>2. PRIVATE COMPANION STREAM</h4>
+        <div id="gate">⚠️ STREAM LOCKED<br>Unpause and unmute the Twitch frame above to watch!</div>
+        <video id="private-feed" controls playsinline></video>
+    </div>
 
-<script>
-    // REPLACE 'YOUR_TWITCH_USERNAME' WITH YOUR ACTUAL TWITCH CHANNEL NAME
-    const TWITCH_CHANNEL = 'YOUR_TWITCH_USERNAME';
+    <script>
+        // CONFIGURATION: Set your Twitch channel and paste your Pinggy HTTPS link
+        const CHANNEL_NAME = 'YOUR_TWITCH_USERNAME';
+        const STREAM_SOURCE = 'PASTE_YOUR_PINGGY_URL_HERE/live/watchparty/index.m3u8';
 
-    // FOR LOCAL TESTING: This points to your local MediaMTX HLS feed
-    const HLS_STREAM_URL = 'http://localhost:8554/live/movie/index.m3u8';
+        const twOptions = { width: '100%', height: 240, channel: CHANNEL_NAME, parent: [window.location.hostname] };
+        const twPlayer = new Twitch.Player("twitch-frame", twOptions);
+        const vid = document.getElementById('private-feed');
+        const gate = document.getElementById('gate');
 
-    // Initialize Twitch Player
-    const twitchOptions = { width: '100%', height: 250, channel: TWITCH_CHANNEL, parent: [window.location.hostname] };
-    const twitchPlayer = new Twitch.Player("twitch-player", twitchOptions);
-
-    // Initialize Private Video Player via HLS.js
-    const video = document.getElementById('private-video');
-    const overlay = document.getElementById('lock-overlay');
-
-    if (HLS.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(HLS_STREAM_URL);
-        hls.attachMedia(video);
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native support for Apple Safari Mobile
-        video.src = HLS_STREAM_URL;
-    }
-
-    // Anti-Lurk Enforcement Loop (Checks player state every 1 second)
-    setInterval(() => {
-        const isPaused = twitchPlayer.isPaused();
-        const isMuted = twitchPlayer.getMuted();
-        const volume = twitchPlayer.getVolume();
-
-        // Rule: Lock if Twitch is paused, muted, or volume slider is at 0
-        if (isPaused || isMuted || volume === 0) {
-            overlay.style.display = 'flex';
-            video.pause();
-        } else {
-            overlay.style.display = 'none';
+        if (HLS.isSupported()) {
+            const hls = new Hls();
+            hls.loadSource(STREAM_SOURCE);
+            hls.attachMedia(vid);
+        } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
+            vid.src = STREAM_SOURCE;
         }
-    }, 1000);
-</script>
+
+        // Enforcement loop: verifies Twitch state every 1000ms
+        setInterval(() => {
+            if (twPlayer.isPaused() || twPlayer.getMuted() || twPlayer.getVolume() === 0) {
+                gate.style.display = 'flex';
+                vid.pause();
+            } else {
+                gate.style.display = 'none';
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
