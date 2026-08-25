@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Watch Lounge</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script defer src="./reader.js"></script>
     <script src="https://player.twitch.tv/js/embed/v1.js"></script>
     <style>
         body { margin: 0; background: #0e0e10; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
@@ -26,21 +26,21 @@
         <video id="private-feed" controls playsinline></video>
     </div>
     <script>
-        // CONFIGURATION: Set your Twitch channel and paste your Pinggy HTTPS link
+        // CONFIGURATION: Set your Twitch channel and paste your Cloudflare Tunnel URL
         const CHANNEL_NAME = 'fraudvlent';
-        const STREAM_SOURCE = 'https://jbmes-98-145-11-58.run.pinggy-free.link/live/watchparty/index.m3u8';
+        const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep';
         const twOptions = { width: '100%', height: 240, channel: CHANNEL_NAME, parent: [window.location.hostname] };
         const twPlayer = new Twitch.Player("twitch-frame", twOptions);
         const vid = document.getElementById('private-feed');
         const gate = document.getElementById('gate');
 
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(STREAM_SOURCE);
-            hls.attachMedia(vid);
-        } else if (vid.canPlayType('application/vnd.apple.mpegurl')) {
-            vid.src = STREAM_SOURCE;
-        }
+        let webrtcReader = new MediaMTXWebRTCReader({
+            url: STREAM_SOURCE,
+            onError: (err) => { console.error(err); },
+            onTrack: (evt) => {
+                vid.srcObject = evt.streams[0];
+            },
+        });
 
         // Wait for the Twitch embed to actually finish loading before polling
         // it — calling isPaused()/getMuted() too early can throw errors.
