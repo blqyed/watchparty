@@ -38,27 +38,27 @@
             height: 100%; 
             object-fit: contain; 
             background: black; 
+            position: relative; 
+            z-index: 5; /* default above Twitch player */ 
         } 
         
-        /* FLOATING TWITCH VERIFICATION PLAYER – now inside theater-stage */ 
+        /* FLOATING TWITCH VERIFICATION PLAYER – inside theater-stage */ 
         .twitch-mini-box { 
             position: absolute; 
             top: 10px; 
             right: 10px; 
-            width: 400px; 
-            height: 300px; 
+            width: 400px !important; 
+            height: 300px !important; 
             min-width: 400px;
             min-height: 300px;
-            z-index: 20; 
+            z-index: 10; /* above video normally, but we'll change during fullscreen */ 
             background: #000; 
             border: 2px solid #a970ff; 
             border-radius: 4px; 
             overflow: hidden; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
             pointer-events: none; 
-            transition: transform 0.3s ease, opacity 0.3s ease;
-            transform: scale(1);
-            opacity: 1;
+            /* No transform or opacity changes to avoid Twitch autoplay errors */ 
         } 
         #twitch-frame { 
             width: 100%; 
@@ -262,7 +262,7 @@
             audioBtn.onclick = null; 
             
             vid.muted = false; 
-            // Remove controls attribute to use custom fullscreen
+            // Remove native controls to use our custom fullscreen
             vid.removeAttribute('controls');
             
             if (twPlayer) {
@@ -372,7 +372,7 @@
         }); 
         
         // ========================================================= 
-        // FULLSCREEN HANDLING (now on container)
+        // FULLSCREEN HANDLING (container fullscreen)
         // ========================================================= 
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
@@ -394,16 +394,16 @@
                                document.msFullscreenElement;
             
             if (isFullscreen) {
-                console.log("Entered fullscreen - scaling Twitch overlay");
-                // Style Twitch box for fullscreen: smaller, semi-transparent
-                twitchBox.style.transform = 'scale(0.3)';
-                twitchBox.style.transformOrigin = 'top right';
-                twitchBox.style.opacity = '0.5';
-                twitchBox.style.top = '10px';
-                twitchBox.style.right = '10px';
-                twitchBox.style.zIndex = '50'; // above video
+                console.log("Entered fullscreen - hiding Twitch behind video");
+                // Change z-index so video covers Twitch player
+                vid.style.zIndex = '30';
+                twitchBox.style.zIndex = '10';
                 
-                // Hide the fullscreen button itself (optional)
+                // Ensure no scaling/opacity changes – keep full size & opacity
+                twitchBox.style.transform = 'scale(1)';
+                twitchBox.style.opacity = '1';
+                
+                // Hide fullscreen button (optional)
                 fullscreenBtn.style.display = 'none';
                 
                 if (!isAdPlaying) {
@@ -414,12 +414,9 @@
                 }
             } else {
                 console.log("Exited fullscreen - restoring Twitch position");
-                // Restore original styles
-                twitchBox.style.transform = 'scale(1)';
-                twitchBox.style.opacity = '1';
-                twitchBox.style.top = '10px';
-                twitchBox.style.right = '10px';
-                twitchBox.style.zIndex = '20';
+                // Restore original z-index values
+                vid.style.zIndex = '5';
+                twitchBox.style.zIndex = '10';
                 
                 fullscreenBtn.style.display = 'block';
                 
