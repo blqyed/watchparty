@@ -39,7 +39,7 @@
             object-fit: contain; 
             background: black; 
             position: relative; 
-            z-index: 5; /* default above Twitch player */ 
+            z-index: 5; 
         } 
         
         /* FLOATING TWITCH VERIFICATION PLAYER – inside theater-stage */ 
@@ -51,14 +51,15 @@
             height: 300px !important; 
             min-width: 400px;
             min-height: 300px;
-            z-index: 10; /* above video normally, but we'll change during fullscreen */ 
+            z-index: 10; 
             background: #000; 
             border: 2px solid #a970ff; 
             border-radius: 4px; 
             overflow: hidden; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
             pointer-events: none; 
-            /* No transform or opacity changes to avoid Twitch autoplay errors */ 
+            transition: opacity 0.3s ease;
+            opacity: 1; 
         } 
         #twitch-frame { 
             width: 100%; 
@@ -394,16 +395,15 @@
                                document.msFullscreenElement;
             
             if (isFullscreen) {
-                console.log("Entered fullscreen - hiding Twitch behind video");
-                // Change z-index so video covers Twitch player
-                vid.style.zIndex = '30';
-                twitchBox.style.zIndex = '10';
+                console.log("Entered fullscreen - making Twitch semi-transparent (no scaling)");
+                // Keep Twitch on top, full size, but reduce opacity
+                twitchBox.style.zIndex = '20'; // above video
+                twitchBox.style.opacity = '0.5'; // semi-transparent
+                twitchBox.style.transform = 'scale(1)'; // no scaling
+                twitchBox.style.top = '10px';
+                twitchBox.style.right = '10px';
                 
-                // Ensure no scaling/opacity changes – keep full size & opacity
-                twitchBox.style.transform = 'scale(1)';
-                twitchBox.style.opacity = '1';
-                
-                // Hide fullscreen button (optional)
+                // Hide fullscreen button
                 fullscreenBtn.style.display = 'none';
                 
                 if (!isAdPlaying) {
@@ -413,10 +413,10 @@
                     }, 100);
                 }
             } else {
-                console.log("Exited fullscreen - restoring Twitch position");
-                // Restore original z-index values
-                vid.style.zIndex = '5';
+                console.log("Exited fullscreen - restoring Twitch opacity");
                 twitchBox.style.zIndex = '10';
+                twitchBox.style.opacity = '1';
+                twitchBox.style.transform = 'scale(1)';
                 
                 fullscreenBtn.style.display = 'block';
                 
