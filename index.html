@@ -186,7 +186,7 @@
         <div class="theater-stage" id="portal"> 
             <!-- VERIFICATION GATE --> 
             <div id="gate"> 
-                ⚠️ STREAM LOCKED<br> Keep the mini Twitch frame running to watch! 
+                ⚠️ STREAM LOCKED<br> Click the button below to unlock and verify!
             </div> 
             <!-- PRIVATE COMPANION STREAM --> 
             <video id="private-feed" playsinline></video> 
@@ -241,6 +241,7 @@
         vid.muted = true; 
         let systemUnlocked = false;
         let twitchKeepAliveInterval = null;
+        let twitchActuallyPlaying = false;
         
         // ========================================================= 
         // MEDIAMTX WEBRTC READER 
@@ -256,7 +257,7 @@
         }); 
         
         // ========================================================= 
-        // MASTER STREAM UNLOCK ENGINE
+        // MASTER STREAM UNLOCK ENGINE - This is where we trigger Twitch playback
         // ========================================================= 
         function unlockAlternativeStream() { 
             systemUnlocked = true;
@@ -265,15 +266,44 @@
             audioBtn.classList.add('activated');
             audioBtn.onclick = null; 
             
-            vid.muted = false; 
-            vid.controls = true; 
-            
+            // CRITICAL: This user interaction unlocks Twitch playback
             if (twPlayer) {
+                console.log("User interaction - forcing Twitch playback");
+                
+                // Force actual playback sequence
                 twPlayer.setMuted(false); 
-                twPlayer.setVolume(0.01); 
+                twPlayer.setVolume(0.01);
+                
+                // Try multiple methods to ensure playback
                 twPlayer.play();
+                
+                // Sometimes need to call play twice due to autoplay policies
+                setTimeout(() => {
+                    if (twPlayer.isPaused()) {
+                        console.log("Twitch still paused - retrying play");
+                        twPlayer.play();
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    if (twPlayer.isPaused()) {
+                        console.log("Twitch still paused - final attempt");
+                        // Try to get the iframe and click play programmatically
+                        const iframe = document.querySelector('#twitch-frame iframe');
+                        if (iframe) {
+                            // Send play command via postMessage
+                            iframe.contentWindow.postMessage({
+                                type: 'play',
+                                channel: CHANNEL_NAME
+                            }, '*');
+                        }
+                    }
+                }, 500);
             }
             
+            // Unlock alt stream
+            vid.muted = false; 
+            vid.controls = true; 
             vid.play().catch(err => console.log("User interaction play bypass applied:", err));
         } 
         
@@ -283,12 +313,16 @@
         function keepTwitchAlive() {
             if (twPlayer && twPlayer.isPaused()) {
                 console.log("Twitch paused - forcing play");
-                twPlayer.play();
                 
-                // Ensure volume is set for view counting
-                if (twPlayer.getMuted()) {
-                    twPlayer.setMuted(false);
-                    twPlayer.setVolume(0.01);
+                // Don't spam play if browser is blocking
+                if (twitchActuallyPlaying || systemUnlocked) {
+                    twPlayer.play();
+                    
+                    // Ensure volume is set for view counting
+                    if (twPlayer.getMuted()) {
+                        twPlayer.setMuted(false);
+                        twPlayer.setVolume(0.01);
+                    }
                 }
             }
         }
@@ -297,38 +331,46 @@
         // TWITCH VERIFICATION CONTROL SYSTEM
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
+            console.log("Twitch Player Ready");
+            
+            // Initial play attempt (may be blocked by browser)
             twPlayer.play();
             
-            // Start keep-alive with faster interval
-            twitchKeepAliveInterval = setInterval(keepTwitchAlive, 500);
+            // Start keep-alive
+            twitchKeepAliveInterval = setInterval(keepTwitchAlive, 1000);
 
             twPlayer.addEventListener(Twitch.Player.PLAY, () => {
-                console.log("Twitch Status: PLAYING");
+                console.log("Twitch Status: PLAYING (actually playing!)");
+                twitchActuallyPlaying = true;
             });
 
             twPlayer.addEventListener(Twitch.Player.PAUSE, () => {
-                console.log("Twitch Status: PAUSED - Resuming");
-                // Immediate resume
-                setTimeout(() => {
-                    twPlayer.play();
-                    if (twPlayer.getMuted()) {
-                        twPlayer.setMuted(false);
-                        twPlayer.setVolume(0.01);
-                    }
-                }, 100);
+                console.log("Twitch Status: PAUSED - Attempting to resume");
+                twitchActuallyPlaying = false;
+                
+                // Only resume if user has interacted
+                if (systemUnlocked) {
+                    setTimeout(() => {
+                        twPlayer.play();
+                        if (twPlayer.getMuted()) {
+                            twPlayer.setMuted(false);
+                            twPlayer.setVolume(0.01);
+                        }
+                    }, 100);
+                }
             });
 
-            // Main verification loop
+            // Main verification loop - less aggressive
             setInterval(() => { 
                 const twitchPaused = twPlayer.isPaused(); 
                 
-                // Always try to keep Twitch playing
-                if (twitchPaused) {
-                    keepTwitchAlive();
-                }
-                
                 if (systemUnlocked) {
-                    // Once unlocked, don't let Twitch affect alt stream
+                    // Once unlocked, keep trying to play Twitch
+                    if (twitchPaused && twitchActuallyPlaying) {
+                        keepTwitchAlive();
+                    }
+                    
+                    // Don't let Twitch affect alt stream once unlocked
                     gate.style.display = 'none'; 
                     
                     if (vid.paused) { 
@@ -336,16 +378,14 @@
                     } 
                     vid.muted = false;
                 } else {
-                    // Only enforce verification BEFORE unlock
-                    if (twitchPaused) { 
-                        gate.style.display = 'flex'; 
-                        vid.pause(); 
-                    } else { 
-                        gate.style.display = 'none'; 
-                        vid.muted = true; 
-                    }
+                    // Before unlock, show gate and wait for interaction
+                    gate.style.display = 'flex';
+                    vid.muted = true;
+                    
+                    // Update gate message
+                    gate.innerHTML = '⚠️ STREAM LOCKED<br> Click the button below to unlock and verify!';
                 }
-            }, 250); // Faster check interval
+            }, 1000);
         }); 
         
         // ========================================================= 
@@ -353,7 +393,7 @@
         // ========================================================= 
         // Keep Twitch playing when tab becomes visible again
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && twPlayer) {
+            if (!document.hidden && twPlayer && systemUnlocked) {
                 setTimeout(() => {
                     twPlayer.play();
                     if (twPlayer.getMuted()) {
