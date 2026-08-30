@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Live Watch Lounge</title> 
     <script src="./reader.js"></script> 
-    <!-- FIXED: Used the correct Twitch Embed API script from the working code -->
     <script src="https://player.twitch.tv/js/embed/v1.js"></script> 
     <style> 
         body { 
@@ -53,6 +52,8 @@
             border-radius: 4px; 
             overflow: hidden; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
+            /* Blocks all mouse interaction so users cannot pause or unmute the stream/ads */
+            pointer-events: none; 
         } 
         #twitch-frame { 
             width: 100%; 
@@ -152,7 +153,6 @@
         // CONFIGURATION 
         // ========================================================= 
         const CHANNEL_NAME = 'fraudvlent'; 
-        // FIXED: Pulled the complete WHEP URL endpoint from the working code
         const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep'; 
         
         // ========================================================= 
@@ -163,7 +163,7 @@
             height: '100%', 
             channel: CHANNEL_NAME, 
             muted: true, 
-            parent: ["blqyed.github.io", window.location.hostname] // 👈 ADD YOUR GITHUB PAGES DOMAIN HERE
+            parent: ["blqyed.github.io", window.location.hostname] 
         }; 
         const twPlayer = new Twitch.Player("twitch-frame", twOptions); 
  
@@ -206,20 +206,14 @@
             vid.muted = false; 
             vid.controls = true; // Enables controls only after unlocking
             
-            // 3. Force active canvas hardware filter over Twitch to block its audio output
-            const twitchFrameEl = document.getElementById('twitch-frame');
-            if (twitchFrameEl) {
-                twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
-            }
-            
-            // 4. Force Twitch to unmute and play internally so it bypasses the verification gate
+            // 3. Force Twitch to unmute visually, but drop volume to 1% to silence it
             if (twPlayer) {
-                twPlayer.setMuted(false);
-                twPlayer.setVolume(1.0);
+                twPlayer.setMuted(false); 
+                twPlayer.setVolume(0.01); 
                 twPlayer.play();
             }
             
-            // 5. Force immediate video player container engine ignition
+            // 4. Force immediate video player container engine ignition
             vid.play().catch(err => console.log("User interaction play bypass applied:", err));
         } 
         
@@ -234,6 +228,9 @@
                 const twitchPaused = twPlayer.isPaused(); 
                 
                 if (systemUnlocked) {
+                    // Aggressively force micro-volume to suppress ad audio hijack attempts
+                    twPlayer.setVolume(0.01);
+
                     // If unlocked and the browser pauses Twitch (e.g., due to fullscreen), force it to resume
                     if (twitchPaused) {
                         twPlayer.play();
