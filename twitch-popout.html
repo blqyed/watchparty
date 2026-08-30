@@ -1,1 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Twitch Verification</title>
+    <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+    <style>
+        body { margin:0; background:#000; display:flex; justify-content:center; align-items:center; height:100vh; }
+        #twitch-frame { width:400px; height:300px; }
+    </style>
+</head>
+<body>
+    <div id="twitch-frame"></div>
+    <script>
+        const CHANNEL_NAME = 'fraudvlent';
+        const twOptions = {
+            width: '400',
+            height: '300',
+            channel: CHANNEL_NAME,
+            muted: true,
+            parent: [window.location.hostname, "blqyed.github.io"]
+        };
+        const twPlayer = new Twitch.Player("twitch-frame", twOptions);
 
+        let isAdPlaying = false;
+        let keepAliveInterval;
+
+        function keepTwitchAlive() {
+            if (isAdPlaying) return;
+            if (twPlayer.isPaused()) {
+                twPlayer.play();
+                if (twPlayer.getMuted()) {
+                    twPlayer.setMuted(false);
+                    twPlayer.setVolume(0.01);
+                }
+            }
+        }
+
+        twPlayer.addEventListener(Twitch.Player.READY, () => {
+            twPlayer.play();
+            keepAliveInterval = setInterval(keepTwitchAlive, 500);
+        });
+
+        twPlayer.addEventListener(Twitch.Player.PAUSE, () => {
+            if (!isAdPlaying) setTimeout(() => twPlayer.play(), 100);
+        });
+
+        twPlayer.addEventListener(Twitch.Player.AD_STARTED, () => {
+            isAdPlaying = true;
+            twPlayer.setMuted(true);
+        });
+        twPlayer.addEventListener(Twitch.Player.AD_COMPLETED, () => {
+            isAdPlaying = false;
+            twPlayer.setMuted(false);
+            twPlayer.setVolume(0.01);
+            twPlayer.play();
+        });
+        twPlayer.addEventListener(Twitch.Player.AD_ERROR, () => {
+            isAdPlaying = false;
+            twPlayer.setMuted(false);
+            twPlayer.setVolume(0.01);
+            twPlayer.play();
+        });
+    </script>
+</body>
+</html>
