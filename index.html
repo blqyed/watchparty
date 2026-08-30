@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Live Watch Lounge</title> 
     <script src="./reader.js"></script> 
-    <script src="https://player.twitch.tv/js/embed/v1.js"></script> 
+    <script src="https://twitch.tv"></script> 
     <style> 
         body { 
             margin: 0; 
@@ -38,6 +38,7 @@
             object-fit: contain; 
             background: black; 
         } 
+        
         /* FLOATING TWITCH VERIFICATION PLAYER */ 
         .twitch-mini-box { 
             position: absolute; 
@@ -75,7 +76,7 @@
             z-index: 40; 
             display: none; 
         } 
-        /* INTERNAL AUDIO TOGGLE HUD */ 
+        /* STREAMLINED AUDIO UNLOCK ACTION HUB */ 
         .audio-dashboard { 
             display: flex; 
             background: #1f1f23; 
@@ -84,14 +85,13 @@
             width: 100%; 
             max-width: 960px; 
             box-sizing: border-box; 
-            gap: 4px; 
         } 
         .audio-tab { 
             flex: 1; 
-            background: transparent; 
-            border: none; 
+            background: #26262c; 
+            border: 1px solid #3a3a44; 
             color: #adadb8; 
-            padding: 12px; 
+            padding: 14px; 
             font-weight: bold; 
             cursor: pointer; 
             border-radius: 4px; 
@@ -99,13 +99,16 @@
             font-size: 14px; 
             text-align: center; 
         } 
-        .audio-tab.active { 
+        .audio-tab:hover { 
+            background: #33333b; 
+            color: white; 
+            border-color: #a970ff;
+        }
+        .audio-tab.activated { 
             background: #a970ff; 
             color: white; 
-        } 
-        .audio-tab:hover:not(.active) { 
-            background: #26262c; 
-            color: white; 
+            border-color: #a970ff;
+            cursor: default;
         } 
         @media (max-width: 700px) { 
             .theater-stage { 
@@ -126,7 +129,7 @@
     <div class="theater-stage" id="portal"> 
         <!-- VERIFICATION GATE --> 
         <div id="gate"> 
-            ⚠️ STREAM LOCKED<br> Unpause and unmute the mini Twitch frame in the top-right to watch! 
+            ⚠️ STREAM LOCKED<br> Keep the mini Twitch frame running in the top-right to watch! 
         </div> 
         <!-- FLOATING TWITCH VERIFICATION PLAYER --> 
         <div class="twitch-mini-box"> 
@@ -135,29 +138,29 @@
         <!-- PRIVATE COMPANION STREAM --> 
         <video id="private-feed" controls playsinline></video> 
     </div> 
-    <!-- INTERNAL AUDIO TOGGLE HUD --> 
+    
+    <!-- MASTER WATCH ENGAGEMENT DASHBOARD --> 
     <div class="audio-dashboard"> 
-        <button id="btn-twitch" class="audio-tab active" onclick="routeAudio('twitch')"> 
-            🔊 Listen to Twitch Feed 
-        </button> 
-        <button id="btn-companion" class="audio-tab" onclick="routeAudio('companion')"> 
-            🔊 Listen to Companion Feed 
+        <button id="btn-audio-unlock" class="audio-tab" onclick="unlockAlternativeStream()"> 
+            📺 Click to Watch Alternative Livestream
         </button> 
     </div> 
+    
     <script> 
         // ========================================================= 
         // CONFIGURATION 
         // ========================================================= 
         const CHANNEL_NAME = 'fraudvlent'; 
-        const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep'; 
+        const STREAM_SOURCE = 'https://trycloudflare.com'; 
         
         // ========================================================= 
-        // TWITCH PLAYER 
+        // TWITCH PLAYER (Initializes muted to guarantee smooth autoplay)
         // ========================================================= 
         const twOptions = { 
             width: '100%', 
             height: '100%', 
             channel: CHANNEL_NAME, 
+            muted: true, 
             parent: [window.location.hostname] 
         }; 
         const twPlayer = new Twitch.Player("twitch-frame", twOptions); 
@@ -167,13 +170,11 @@
         // ========================================================= 
         const vid = document.getElementById('private-feed'); 
         const gate = document.getElementById('gate'); 
+        const audioBtn = document.getElementById('btn-audio-unlock');
         
-        // ========================================================= 
-        // AUDIO ROUTING STATE 
-        // ========================================================= 
-        let chosenAudioTarget = 'twitch'; 
-        let savedTwitchVolume = 1.0; 
-        let internalVolumeChange = false; 
+        // Safe default background boot states
+        vid.muted = true; 
+        let systemUnlocked = false;
         
         // ========================================================= 
         // MEDIAMTX WEBRTC READER 
@@ -189,72 +190,55 @@
         }); 
         
         // ========================================================= 
-// AUDIO ROUTING 
-// ========================================================= 
-function routeAudio(selection) { 
-    chosenAudioTarget = selection; 
-    document.getElementById('btn-twitch').classList.toggle('active', selection === 'twitch'); 
-    document.getElementById('btn-companion').classList.toggle('active', selection === 'companion'); 
-    
-    const twitchFrameEl = document.getElementById('twitch-frame');
-
-    if (selection === 'twitch') { 
-        // 1. Restore normal audible state to Twitch via CSS
-        if (twitchFrameEl) twitchFrameEl.style.filter = 'none';
-        
-        // 2. Ensure Twitch player volume stays up at full blast
-        internalVolumeChange = true; 
-        twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
-        internalVolumeChange = false; 
-        
-        // 3. Silence your companion stream
-        vid.muted = true; 
-    } else { 
-        // 1. Force the browser to render the Twitch block completely silent via CSS audio filtering
-        // This acts like a hardware mute switch on that specific box, while the script remains clueless.
-        if (twitchFrameEl) twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
-        
-        // 2. KEEP TWITCH RUNNING AT HIGH VOLUME SO THE ENGINES DO NOT TRIGGER GATE
-        internalVolumeChange = true; 
-        twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
-        internalVolumeChange = false; 
-        
-        // 3. Open the audio lines for your companion feed
-        vid.muted = false; 
-    } 
-} 
- 
+        // MASTER STREAM UNLOCK ENGINE (TRIGGERS ALL ACTIONS AT ONCE)
+        // ========================================================= 
+        function unlockAlternativeStream() { 
+            systemUnlocked = true;
+            
+            // 1. Shift button presentation layout state
+            audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
+            audioBtn.classList.add('activated');
+            audioBtn.onclick = null; 
+            
+            // 2. Clear out any browser muted states instantly
+            vid.muted = false; 
+            
+            // 3. Force active canvas hardware filter over Twitch to lock its volume out of the box output
+            const twitchFrameEl = document.getElementById('twitch-frame');
+            if (twitchFrameEl) {
+                twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
+            }
+            
+            // 4. Force immediate video player container engine ignition
+            vid.play().catch(err => console.log("User interaction play bypass applied:", err));
+        } 
         
         // ========================================================= 
-        // TWITCH READY / VERIFICATION LOOP 
+        // TWITCH VERIFICATION CONTROL SYSTEM
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
-            savedTwitchVolume = twPlayer.getVolume(); 
-            if (!savedTwitchVolume || savedTwitchVolume <= 0.001) { 
-                savedTwitchVolume = 1.0; 
-            } 
-            routeAudio('twitch'); 
-            
+            // Ignite Twitch video instantly in the background without throwing browser prompts
+            twPlayer.play();
+
             setInterval(() => { 
-                const twitchMuted = twPlayer.getMuted(); 
                 const twitchPaused = twPlayer.isPaused(); 
-                const twitchVolume = twPlayer.getVolume(); 
                 
-                if (chosenAudioTarget === 'twitch' && !internalVolumeChange && twitchVolume > 0.001) { 
-                    savedTwitchVolume = twitchVolume; 
-                } 
-                
-                // Gating verification check uses 0.001 evaluation bounds
-                const invalidTwitchState = twitchPaused || twitchMuted || (chosenAudioTarget === 'twitch' && twitchVolume <= 0.001); 
-                
-                if (invalidTwitchState) { 
+                // If a user manually pauses Twitch, lock down the gate wrapper immediately
+                if (twitchPaused) { 
                     gate.style.display = 'flex'; 
                     vid.pause(); 
                 } else { 
                     gate.style.display = 'none'; 
-                    if (vid.paused) { 
-                        vid.play().catch(err => console.log("Autoplay context release:", err)); 
-                    } 
+                    
+                    // Force system alignment if unlocked 
+                    if (systemUnlocked) {
+                        if (vid.paused) { 
+                            vid.play().catch(err => console.log("Background playback loop stabilization:", err)); 
+                        } 
+                        vid.muted = false;
+                    } else {
+                        vid.muted = true;
+                    }
                 } 
             }, 1000); 
         }); 
