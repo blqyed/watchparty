@@ -191,29 +191,36 @@
             }, 
         }); 
         
-        // ========================================================= 
-        // MASTER STREAM UNLOCK ENGINE (TRIGGERS ALL ACTIONS AT ONCE)
-        // ========================================================= 
-        function unlockAlternativeStream() { 
-            systemUnlocked = true;
-            
-            // 1. Shift button presentation layout state
-            audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
-            audioBtn.classList.add('activated');
-            audioBtn.onclick = null; 
-            
-            // 2. Clear out any browser muted states instantly
-            vid.muted = false; 
-            
-            // 3. Force active canvas hardware filter over Twitch to lock its volume out of the box output
-            const twitchFrameEl = document.getElementById('twitch-frame');
-            if (twitchFrameEl) {
-                twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
-            }
-            
-            // 4. Force immediate video player container engine ignition
-            vid.play().catch(err => console.log("User interaction play bypass applied:", err));
-        } 
+// ========================================================= 
+// MASTER STREAM UNLOCK ENGINE (TRIGGERS ALL ACTIONS AT ONCE)
+// ========================================================= 
+function unlockAlternativeStream() { 
+    systemUnlocked = true;
+    
+    // 1. Shift button presentation layout state
+    audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
+    audioBtn.classList.add('activated');
+    audioBtn.onclick = null; 
+    
+    // 2. Clear out any browser muted states instantly for the main feed
+    vid.muted = false; 
+    
+    // 3. Force active canvas hardware filter over Twitch to block its audio output
+    const twitchFrameEl = document.getElementById('twitch-frame');
+    if (twitchFrameEl) {
+        twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
+    }
+    
+    // 4. Force Twitch to unmute and play internally so it bypasses the verification gate
+    if (twPlayer) {
+        twPlayer.setMuted(false);
+        twPlayer.setVolume(1.0);
+        twPlayer.play();
+    }
+    
+    // 5. Force immediate video player container engine ignition
+    vid.play().catch(err => console.log("User interaction play bypass applied:", err));
+} 
         
         // ========================================================= 
         // TWITCH VERIFICATION CONTROL SYSTEM
