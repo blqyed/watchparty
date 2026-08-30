@@ -55,6 +55,7 @@
         #twitch-frame { 
             width: 100%; 
             height: 100%; 
+            transition: filter 0.2s ease;
         } 
         /* LOCK GATE */ 
         #gate { 
@@ -149,7 +150,7 @@
         // CONFIGURATION 
         // ========================================================= 
         const CHANNEL_NAME = 'fraudvlent'; 
-        const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep'; 
+        const STREAM_SOURCE = 'https://trycloudflare.com'; 
         
         // ========================================================= 
         // TWITCH PLAYER 
@@ -196,15 +197,25 @@
             document.getElementById('btn-twitch').classList.toggle('active', selection === 'twitch'); 
             document.getElementById('btn-companion').classList.toggle('active', selection === 'companion'); 
             
+            const twitchFrameEl = document.getElementById('twitch-frame');
+
             if (selection === 'twitch') { 
+                // Restore audible output to Twitch element via CSS
+                if (twitchFrameEl) twitchFrameEl.style.filter = 'none';
+
                 internalVolumeChange = true; 
-                twPlayer.setVolume(savedTwitchVolume > 0.001 ? savedTwitchVolume : 1.0); 
+                twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
                 internalVolumeChange = false; 
+                
                 vid.muted = true; 
             } else { 
+                // Hide audio component from browser via inline SVG canvas linear transfer filter
+                if (twitchFrameEl) twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
+
                 internalVolumeChange = true; 
-                twPlayer.setVolume(0.001); // Keeps Twitch engine active without human-audible sound
+                twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); // KEEP THE VOLUME ALIVE FOR THE TWITCH PLAYER
                 internalVolumeChange = false; 
+                
                 vid.muted = false; 
             } 
         } 
@@ -214,7 +225,7 @@
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
             savedTwitchVolume = twPlayer.getVolume(); 
-            if (!savedTwitchVolume || savedTwitchVolume <= 0.001) { 
+            if (!savedTwitchVolume || savedTwitchVolume <= 0.1) { 
                 savedTwitchVolume = 1.0; 
             } 
             routeAudio('twitch'); 
@@ -224,12 +235,12 @@
                 const twitchPaused = twPlayer.isPaused(); 
                 const twitchVolume = twPlayer.getVolume(); 
                 
-                if (chosenAudioTarget === 'twitch' && !internalVolumeChange && twitchVolume > 0.001) { 
+                if (chosenAudioTarget === 'twitch' && !internalVolumeChange && twitchVolume > 0.1) { 
                     savedTwitchVolume = twitchVolume; 
                 } 
                 
-                // Gating verification check uses 0.001 evaluation bounds
-                const invalidTwitchState = twitchPaused || twitchMuted || (chosenAudioTarget === 'twitch' && twitchVolume <= 0.001); 
+                // Twitch is playing, not muted, and volume slider stays completely unbothered
+                const invalidTwitchState = twitchPaused || twitchMuted || (chosenAudioTarget === 'twitch' && twitchVolume === 0); 
                 
                 if (invalidTwitchState) { 
                     gate.style.display = 'flex'; 
@@ -237,7 +248,7 @@
                 } else { 
                     gate.style.display = 'none'; 
                     if (vid.paused) { 
-                        vid.play().catch(err => console.log("Autoplay context release:", err)); 
+                        vid.play().catch(err => console.log("Autoplay content frame check:", err)); 
                     } 
                 } 
             }, 1000); 
