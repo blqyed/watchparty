@@ -136,8 +136,8 @@
         <div class="twitch-mini-box"> 
             <div id="twitch-frame"></div> 
         </div> 
-        <!-- PRIVATE COMPANION STREAM --> 
-        <video id="private-feed" controls playsinline></video> 
+        <!-- PRIVATE COMPANION STREAM - Controls removed to force button usage --> 
+        <video id="private-feed" playsinline></video> 
     </div> 
     
     <!-- MASTER WATCH ENGAGEMENT DASHBOARD --> 
@@ -191,64 +191,70 @@
             }, 
         }); 
         
-// ========================================================= 
-// MASTER STREAM UNLOCK ENGINE (TRIGGERS ALL ACTIONS AT ONCE)
-// ========================================================= 
-function unlockAlternativeStream() { 
-    systemUnlocked = true;
-    
-    // 1. Shift button presentation layout state
-    audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
-    audioBtn.classList.add('activated');
-    audioBtn.onclick = null; 
-    
-    // 2. Clear out any browser muted states instantly for the main feed
-    vid.muted = false; 
-    
-    // 3. Force active canvas hardware filter over Twitch to block its audio output
-    const twitchFrameEl = document.getElementById('twitch-frame');
-    if (twitchFrameEl) {
-        twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
-    }
-    
-    // 4. Force Twitch to unmute and play internally so it bypasses the verification gate
-    if (twPlayer) {
-        twPlayer.setMuted(false);
-        twPlayer.setVolume(1.0);
-        twPlayer.play();
-    }
-    
-    // 5. Force immediate video player container engine ignition
-    vid.play().catch(err => console.log("User interaction play bypass applied:", err));
-} 
+        // ========================================================= 
+        // MASTER STREAM UNLOCK ENGINE
+        // ========================================================= 
+        function unlockAlternativeStream() { 
+            systemUnlocked = true;
+            
+            // 1. Shift button presentation layout state
+            audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
+            audioBtn.classList.add('activated');
+            audioBtn.onclick = null; 
+            
+            // 2. Clear out any browser muted states instantly for the main feed & add controls
+            vid.muted = false; 
+            vid.controls = true; // Enables controls only after unlocking
+            
+            // 3. Force active canvas hardware filter over Twitch to block its audio output
+            const twitchFrameEl = document.getElementById('twitch-frame');
+            if (twitchFrameEl) {
+                twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
+            }
+            
+            // 4. Force Twitch to unmute and play internally so it bypasses the verification gate
+            if (twPlayer) {
+                twPlayer.setMuted(false);
+                twPlayer.setVolume(1.0);
+                twPlayer.play();
+            }
+            
+            // 5. Force immediate video player container engine ignition
+            vid.play().catch(err => console.log("User interaction play bypass applied:", err));
+        } 
         
         // ========================================================= 
         // TWITCH VERIFICATION CONTROL SYSTEM
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
-            // Ignite Twitch video instantly in the background without throwing browser prompts
+            // Ignite Twitch video instantly in the background
             twPlayer.play();
 
             setInterval(() => { 
                 const twitchPaused = twPlayer.isPaused(); 
                 
-                // If a user manually pauses Twitch, lock down the gate wrapper immediately
-                if (twitchPaused) { 
-                    gate.style.display = 'flex'; 
-                    vid.pause(); 
-                } else { 
+                if (systemUnlocked) {
+                    // If unlocked and the browser pauses Twitch (e.g., due to fullscreen), force it to resume
+                    if (twitchPaused) {
+                        twPlayer.play();
+                    }
+                    
                     gate.style.display = 'none'; 
                     
-                    // Force system alignment if unlocked 
-                    if (systemUnlocked) {
-                        if (vid.paused) { 
-                            vid.play().catch(err => console.log("Background playback loop stabilization:", err)); 
-                        } 
-                        vid.muted = false;
-                    } else {
-                        vid.muted = true;
+                    if (vid.paused) { 
+                        vid.play().catch(err => console.log("Background playback loop stabilization:", err)); 
+                    } 
+                    vid.muted = false;
+                } else {
+                    // If the system is NOT unlocked and Twitch is paused, lock the gate
+                    if (twitchPaused) { 
+                        gate.style.display = 'flex'; 
+                        vid.pause(); 
+                    } else { 
+                        gate.style.display = 'none'; 
+                        vid.muted = true; 
                     }
-                } 
+                }
             }, 1000); 
         }); 
     </script> 
