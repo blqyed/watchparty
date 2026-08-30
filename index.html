@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>Live Watch Lounge</title> 
     <script src="./reader.js"></script> 
-    <script src="https://twitch.tv"></script> 
+    <!-- FIXED: Used the correct Twitch Embed API script from the working code -->
+    <script src="https://player.twitch.tv/js/embed/v1.js"></script> 
     <style> 
         body { 
             margin: 0; 
@@ -151,7 +152,8 @@
         // CONFIGURATION 
         // ========================================================= 
         const CHANNEL_NAME = 'fraudvlent'; 
-        const STREAM_SOURCE = 'https://trycloudflare.com'; 
+        // FIXED: Pulled the complete WHEP URL endpoint from the working code
+        const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep'; 
         
         // ========================================================= 
         // TWITCH PLAYER (Fixed for GitHub Pages domain)
