@@ -18,6 +18,7 @@
             min-height: 100vh; 
             padding: 10px; 
             box-sizing: border-box; 
+            position: relative; /* Ensures absolute positioning works relative to body */
         } 
         /* MAIN THEATER CONTAINER */ 
         .theater-stage { 
@@ -39,21 +40,20 @@
             background: black; 
         } 
         
-        /* FLOATING TWITCH VERIFICATION PLAYER */ 
+        /* FLOATING TWITCH VERIFICATION PLAYER (Moved to Body root so fullscreen doesn't swallow it) */ 
         .twitch-mini-box { 
-            position: absolute; 
-            top: 15px; 
-            right: 15px; 
+            position: fixed; /* Fixed to viewport so it stays visible even during scroll/fullscreen if desired, or absolute to body */
+            top: 25px; 
+            right: 25px; 
             width: 400px; 
             height: 300px; 
-            z-index: 50; 
+            z-index: 9999; 
             background: #000; 
             border: 2px solid #a970ff; 
             border-radius: 4px; 
             overflow: hidden; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
-            /* Blocks all mouse interaction so users cannot pause or unmute the stream/ads */
-            pointer-events: none; 
+            pointer-events: none; /* Blocks all mouse interaction */
         } 
         #twitch-frame { 
             width: 100%; 
@@ -113,31 +113,26 @@
             cursor: default;
         } 
         @media (max-width: 700px) { 
-            .theater-stage { 
-                overflow: auto; 
-            } 
             .twitch-mini-box { 
-                position: absolute; 
-                top: 15px; 
-                right: 15px; 
-                width: 400px; 
-                height: 300px; 
+                width: 200px; 
+                height: 150px; 
             } 
         } 
     </style> 
 </head> 
 <body> 
+    <!-- FLOATING TWITCH VERIFICATION PLAYER (Now safely outside the fullscreen theater stage) --> 
+    <div class="twitch-mini-box"> 
+        <div id="twitch-frame"></div> 
+    </div> 
+
     <!-- MAIN THEATER / PRIVATE COMPANION STREAM --> 
     <div class="theater-stage" id="portal"> 
         <!-- VERIFICATION GATE --> 
         <div id="gate"> 
             ⚠️ STREAM LOCKED<br> Keep the mini Twitch frame running in the top-right to watch! 
         </div> 
-        <!-- FLOATING TWITCH VERIFICATION PLAYER --> 
-        <div class="twitch-mini-box"> 
-            <div id="twitch-frame"></div> 
-        </div> 
-        <!-- PRIVATE COMPANION STREAM - Controls removed to force button usage --> 
+        <!-- PRIVATE COMPANION STREAM --> 
         <video id="private-feed" playsinline></video> 
     </div> 
     
@@ -156,7 +151,7 @@
         const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep'; 
         
         // ========================================================= 
-        // TWITCH PLAYER (Fixed for GitHub Pages domain)
+        // TWITCH PLAYER 
         // ========================================================= 
         const twOptions = { 
             width: '100%', 
@@ -174,7 +169,6 @@
         const gate = document.getElementById('gate'); 
         const audioBtn = document.getElementById('btn-audio-unlock');
         
-        // Safe default background boot states
         vid.muted = true; 
         let systemUnlocked = false;
         
@@ -197,23 +191,19 @@
         function unlockAlternativeStream() { 
             systemUnlocked = true;
             
-            // 1. Shift button presentation layout state
             audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
             audioBtn.classList.add('activated');
             audioBtn.onclick = null; 
             
-            // 2. Clear out any browser muted states instantly for the main feed & add controls
             vid.muted = false; 
-            vid.controls = true; // Enables controls only after unlocking
+            vid.controls = true; 
             
-            // 3. Force Twitch to unmute visually, but drop volume to 1% to silence it
             if (twPlayer) {
                 twPlayer.setMuted(false); 
                 twPlayer.setVolume(0.01); 
                 twPlayer.play();
             }
             
-            // 4. Force immediate video player container engine ignition
             vid.play().catch(err => console.log("User interaction play bypass applied:", err));
         } 
         
@@ -221,17 +211,22 @@
         // TWITCH VERIFICATION CONTROL SYSTEM
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
-            // Ignite Twitch video instantly in the background
             twPlayer.play();
+
+            twPlayer.addEventListener(Twitch.Player.PLAY, () => {
+                console.log("Twitch Status: PLAYING");
+            });
+
+            twPlayer.addEventListener(Twitch.Player.PAUSE, () => {
+                console.log("Twitch Status: PAUSED");
+            });
 
             setInterval(() => { 
                 const twitchPaused = twPlayer.isPaused(); 
                 
                 if (systemUnlocked) {
-                    // Aggressively force micro-volume to suppress ad audio hijack attempts
                     twPlayer.setVolume(0.01);
 
-                    // If unlocked and the browser pauses Twitch (e.g., due to fullscreen), force it to resume
                     if (twitchPaused) {
                         twPlayer.play();
                     }
@@ -243,7 +238,6 @@
                     } 
                     vid.muted = false;
                 } else {
-                    // If the system is NOT unlocked and Twitch is paused, lock the gate
                     if (twitchPaused) { 
                         gate.style.display = 'flex'; 
                         vid.pause(); 
