@@ -31,6 +31,19 @@
             border-radius: 8px; 
             overflow: hidden; 
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); 
+            transition: all 0.3s ease; 
+        } 
+        /* When expanded to simulated fullscreen */ 
+        .theater-stage.fullscreen-sim { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            max-width: 100vw; 
+            border-radius: 0; 
+            z-index: 9998; 
+            margin: 0; 
         } 
         /* MAIN PRIVATE COMPANION STREAM */ 
         video { 
@@ -40,15 +53,15 @@
             background: black; 
         } 
         
-        /* FLOATING TWITCH VERIFICATION PLAYER – FIXED TO VIEWPORT */ 
+        /* FLOATING TWITCH PLAYER – fixed, full size, but clipped to small corner */ 
         .twitch-mini-box { 
             position: fixed; 
-            top: 25px; 
-            right: 25px; 
+            top: 20px; 
+            right: 20px; 
             width: 400px !important; 
             height: 300px !important; 
-            min-width: 400px;
-            min-height: 300px;
+            min-width: 400px; 
+            min-height: 300px; 
             z-index: 99999; 
             background: #000; 
             border: 2px solid #a970ff; 
@@ -56,9 +69,11 @@
             overflow: hidden; 
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
             pointer-events: none; 
-            transition: opacity 0.3s ease;
-            opacity: 1; 
+            /* Clip to show only a small square in top-left corner of the player */ 
+            clip-path: inset(0 80% 80% 0); /* shows top-left 20% x 20% = 80x60 px */ 
+            transition: clip-path 0.3s ease; 
         } 
+        /* Optional: expand clip-path on hover? No, pointer-events none */ 
         #twitch-frame { 
             width: 100%; 
             height: 100%; 
@@ -81,6 +96,24 @@
             pointer-events: auto; 
         } 
         .fullscreen-btn:hover { 
+            background: rgba(0,0,0,0.9); 
+        } 
+        /* Exit button for simulated fullscreen */ 
+        .exit-fullscreen-btn { 
+            position: fixed; 
+            top: 10px; 
+            left: 10px; 
+            z-index: 100000; 
+            background: rgba(0,0,0,0.7); 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            padding: 8px 12px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            display: none; /* hidden by default */ 
+        } 
+        .exit-fullscreen-btn:hover { 
             background: rgba(0,0,0,0.9); 
         } 
         
@@ -146,6 +179,9 @@
     </style> 
 </head> 
 <body> 
+    <!-- EXIT FULLSCREEN BUTTON (simulated) --> 
+    <button class="exit-fullscreen-btn" id="exit-fullscreen-btn">✕ Exit Fullscreen</button> 
+
     <!-- FLOATING TWITCH VERIFICATION PLAYER (fixed) --> 
     <div class="twitch-mini-box" id="twitch-mini-box"> 
         <div id="twitch-frame"></div> 
@@ -195,47 +231,49 @@
         // ========================================================= 
         const vid = document.getElementById('private-feed'); 
         const gate = document.getElementById('gate'); 
-        const audioBtn = document.getElementById('btn-audio-unlock');
-        const twitchBox = document.getElementById('twitch-mini-box');
-        const theaterStage = document.getElementById('portal');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
+        const audioBtn = document.getElementById('btn-audio-unlock'); 
+        const twitchBox = document.getElementById('twitch-mini-box'); 
+        const theaterStage = document.getElementById('portal'); 
+        const fullscreenBtn = document.getElementById('fullscreen-btn'); 
+        const exitFullscreenBtn = document.getElementById('exit-fullscreen-btn'); 
         
         vid.muted = true; 
-        let systemUnlocked = false;
-        let keepTwitchAliveInterval = null;
-        let isAdPlaying = false;
+        let systemUnlocked = false; 
+        let keepTwitchAliveInterval = null; 
+        let isAdPlaying = false; 
+        let isSimulatedFullscreen = false; 
         
         // ========================================================= 
         // AD TESTING BADGE 
         // ========================================================= 
-        function showAdStatus(message) {
-            let badge = document.getElementById('ad-status-badge');
-            if (!badge) {
-                badge = document.createElement('div');
-                badge.id = 'ad-status-badge';
-                badge.style.cssText = `
-                    position: fixed;
-                    bottom: 20px;
-                    left: 20px;
-                    background: rgba(0,0,0,0.8);
-                    color: #fff;
-                    padding: 8px 12px;
-                    border-radius: 4px;
-                    font-size: 14px;
-                    font-weight: bold;
-                    z-index: 999999;
-                    pointer-events: none;
-                    border: 1px solid #a970ff;
-                `;
-                document.body.appendChild(badge);
-            }
-            badge.textContent = message;
-            badge.style.display = 'block';
-            clearTimeout(badge._timeout);
-            badge._timeout = setTimeout(() => {
-                badge.style.display = 'none';
-            }, 5000);
-        }
+        function showAdStatus(message) { 
+            let badge = document.getElementById('ad-status-badge'); 
+            if (!badge) { 
+                badge = document.createElement('div'); 
+                badge.id = 'ad-status-badge'; 
+                badge.style.cssText = ` 
+                    position: fixed; 
+                    bottom: 20px; 
+                    left: 20px; 
+                    background: rgba(0,0,0,0.8); 
+                    color: #fff; 
+                    padding: 8px 12px; 
+                    border-radius: 4px; 
+                    font-size: 14px; 
+                    font-weight: bold; 
+                    z-index: 999999; 
+                    pointer-events: none; 
+                    border: 1px solid #a970ff; 
+                `; 
+                document.body.appendChild(badge); 
+            } 
+            badge.textContent = message; 
+            badge.style.display = 'block'; 
+            clearTimeout(badge._timeout); 
+            badge._timeout = setTimeout(() => { 
+                badge.style.display = 'none'; 
+            }, 5000); 
+        } 
         
         // ========================================================= 
         // MEDIAMTX WEBRTC READER 
@@ -251,193 +289,173 @@
         }); 
         
         // ========================================================= 
-        // MASTER STREAM UNLOCK ENGINE
+        // MASTER STREAM UNLOCK ENGINE 
         // ========================================================= 
         function unlockAlternativeStream() { 
-            systemUnlocked = true;
+            systemUnlocked = true; 
             
-            audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
-            audioBtn.classList.add('activated');
+            audioBtn.innerHTML = "✨ Viewing Alternative Livestream"; 
+            audioBtn.classList.add('activated'); 
             audioBtn.onclick = null; 
             
             vid.muted = false; 
-            // Remove native controls to use our custom fullscreen
-            vid.removeAttribute('controls');
+            // remove native controls 
+            vid.removeAttribute('controls'); 
             
-            if (twPlayer) {
+            if (twPlayer) { 
                 twPlayer.setMuted(false); 
                 twPlayer.setVolume(0.01); 
-                twPlayer.play();
-            }
+                twPlayer.play(); 
+            } 
             
-            vid.play().catch(err => console.log("User interaction play bypass applied:", err));
+            vid.play().catch(err => console.log("User interaction play bypass applied:", err)); 
         } 
         
         // ========================================================= 
-        // FORCE TWITCH PLAYER TO STAY ALIVE (with ad handling)
+        // FORCE TWITCH PLAYER TO STAY ALIVE 
         // ========================================================= 
-        function keepTwitchAlive() {
-            if (isAdPlaying) return;
+        function keepTwitchAlive() { 
+            if (isAdPlaying) return; 
             
-            if (twPlayer && twPlayer.isPaused()) {
-                console.log("Twitch was paused, forcing play...");
-                twPlayer.play();
-                if (twPlayer.getMuted()) {
-                    twPlayer.setMuted(false);
-                    twPlayer.setVolume(0.01);
-                }
-            }
-        }
+            if (twPlayer && twPlayer.isPaused()) { 
+                console.log("Twitch was paused, forcing play..."); 
+                twPlayer.play(); 
+                if (twPlayer.getMuted()) { 
+                    twPlayer.setMuted(false); 
+                    twPlayer.setVolume(0.01); 
+                } 
+            } 
+        } 
         
         // ========================================================= 
-        // TWITCH VERIFICATION CONTROL SYSTEM
+        // TWITCH VERIFICATION CONTROL SYSTEM 
         // ========================================================= 
         twPlayer.addEventListener(Twitch.Player.READY, () => { 
-            twPlayer.play();
+            twPlayer.play(); 
             
-            keepTwitchAliveInterval = setInterval(keepTwitchAlive, 500);
+            keepTwitchAliveInterval = setInterval(keepTwitchAlive, 500); 
             
-            twPlayer.addEventListener(Twitch.Player.PLAY, () => {
-                console.log("Twitch Status: PLAYING");
-                isAdPlaying = false;
-            });
+            twPlayer.addEventListener(Twitch.Player.PLAY, () => { 
+                console.log("Twitch Status: PLAYING"); 
+                isAdPlaying = false; 
+            }); 
             
-            twPlayer.addEventListener(Twitch.Player.PAUSE, () => {
-                console.log("Twitch Status: PAUSED - Attempting to resume");
-                if (!isAdPlaying) {
-                    setTimeout(() => {
-                        twPlayer.play();
-                    }, 100);
-                }
-            });
+            twPlayer.addEventListener(Twitch.Player.PAUSE, () => { 
+                console.log("Twitch Status: PAUSED - Attempting to resume"); 
+                if (!isAdPlaying) { 
+                    setTimeout(() => { 
+                        twPlayer.play(); 
+                    }, 100); 
+                } 
+            }); 
             
-            // AD EVENT LISTENERS
-            twPlayer.addEventListener(Twitch.Player.AD_STARTED, () => {
-                console.log("💰 AD STARTED");
-                isAdPlaying = true;
-                showAdStatus("AD PLAYING");
-                twPlayer.setMuted(true);
-            });
+            // AD EVENT LISTENERS 
+            twPlayer.addEventListener(Twitch.Player.AD_STARTED, () => { 
+                console.log("💰 AD STARTED"); 
+                isAdPlaying = true; 
+                showAdStatus("AD PLAYING"); 
+                twPlayer.setMuted(true); 
+            }); 
             
-            twPlayer.addEventListener(Twitch.Player.AD_COMPLETED, () => {
-                console.log("✅ AD COMPLETED");
-                isAdPlaying = false;
-                showAdStatus("AD DONE");
-                twPlayer.setMuted(false);
-                twPlayer.setVolume(0.01);
-                twPlayer.play();
-            });
+            twPlayer.addEventListener(Twitch.Player.AD_COMPLETED, () => { 
+                console.log("✅ AD COMPLETED"); 
+                isAdPlaying = false; 
+                showAdStatus("AD DONE"); 
+                twPlayer.setMuted(false); 
+                twPlayer.setVolume(0.01); 
+                twPlayer.play(); 
+            }); 
             
-            twPlayer.addEventListener(Twitch.Player.AD_ERROR, () => {
-                console.log("❌ AD ERROR");
-                showAdStatus("AD ERROR");
-                isAdPlaying = false;
-                twPlayer.setMuted(false);
-                twPlayer.setVolume(0.01);
-                twPlayer.play();
-            });
+            twPlayer.addEventListener(Twitch.Player.AD_ERROR, () => { 
+                console.log("❌ AD ERROR"); 
+                showAdStatus("AD ERROR"); 
+                isAdPlaying = false; 
+                twPlayer.setMuted(false); 
+                twPlayer.setVolume(0.01); 
+                twPlayer.play(); 
+            }); 
             
-            // Main verification loop
+            // Main verification loop 
             setInterval(() => { 
                 const twitchPaused = twPlayer.isPaused(); 
                 
-                if (!isAdPlaying) {
-                    if (twitchPaused) {
-                        console.log("Verification loop detected pause - forcing play");
-                        twPlayer.play();
-                        if (twPlayer.getMuted()) {
-                            twPlayer.setMuted(false);
-                            twPlayer.setVolume(0.01);
-                        }
-                    }
-                }
+                if (!isAdPlaying) { 
+                    if (twitchPaused) { 
+                        console.log("Verification loop detected pause - forcing play"); 
+                        twPlayer.play(); 
+                        if (twPlayer.getMuted()) { 
+                            twPlayer.setMuted(false); 
+                            twPlayer.setVolume(0.01); 
+                        } 
+                    } 
+                } 
                 
-                if (systemUnlocked) {
+                if (systemUnlocked) { 
                     gate.style.display = 'none'; 
                     if (vid.paused) { 
                         vid.play().catch(err => console.log("Background playback loop stabilization:", err)); 
                     } 
-                    vid.muted = false;
-                } else {
+                    vid.muted = false; 
+                } else { 
                     if (twitchPaused && !systemUnlocked && !isAdPlaying) { 
                         gate.style.display = 'flex'; 
                         vid.pause(); 
                     } else { 
                         gate.style.display = 'none'; 
                         vid.muted = true; 
-                    }
-                }
-            }, 250);
+                    } 
+                } 
+            }, 250); 
         }); 
         
         // ========================================================= 
-        // FULLSCREEN HANDLING (container fullscreen, Twitch stays fixed)
+        // SIMULATED FULLSCREEN LOGIC 
         // ========================================================= 
-        fullscreenBtn.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                theaterStage.requestFullscreen?.() || theaterStage.webkitRequestFullscreen?.();
-            } else {
-                document.exitFullscreen?.() || document.webkitExitFullscreen?.();
-            }
-        });
+        fullscreenBtn.addEventListener('click', () => { 
+            enterSimulatedFullscreen(); 
+        }); 
         
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+        exitFullscreenBtn.addEventListener('click', () => { 
+            exitSimulatedFullscreen(); 
+        }); 
         
-        function handleFullscreenChange() {
-            const isFullscreen = document.fullscreenElement || 
-                               document.webkitFullscreenElement || 
-                               document.mozFullScreenElement || 
-                               document.msFullscreenElement;
-            
-            if (isFullscreen) {
-                console.log("Entered fullscreen - Twitch fixed overlay stays visible");
-                // Reduce opacity slightly to make it less distracting
-                twitchBox.style.opacity = '0.5'; 
-                // Ensure no scaling or hiding
-                twitchBox.style.transform = 'scale(1)';
-                
-                // Hide fullscreen button
-                fullscreenBtn.style.display = 'none';
-                
-                if (!isAdPlaying) {
-                    setTimeout(() => {
-                        twPlayer.play();
-                        keepTwitchAlive();
-                    }, 100);
-                }
-            } else {
-                console.log("Exited fullscreen - restoring Twitch opacity");
-                twitchBox.style.opacity = '1';
-                
-                fullscreenBtn.style.display = 'block';
-                
-                if (!isAdPlaying) {
-                    setTimeout(() => {
-                        twPlayer.play();
-                    }, 100);
-                }
-            }
-        }
+        function enterSimulatedFullscreen() { 
+            if (isSimulatedFullscreen) return; 
+            isSimulatedFullscreen = true; 
+            theaterStage.classList.add('fullscreen-sim'); 
+            fullscreenBtn.style.display = 'none'; 
+            exitFullscreenBtn.style.display = 'block'; 
+            // Optionally, we can also hide the audio dashboard 
+            document.querySelector('.audio-dashboard').style.display = 'none'; 
+            // Ensure Twitch player remains visible and not clipped away completely 
+            // The clip-path already shows a small square; we can adjust if needed. 
+        } 
+        
+        function exitSimulatedFullscreen() { 
+            if (!isSimulatedFullscreen) return; 
+            isSimulatedFullscreen = false; 
+            theaterStage.classList.remove('fullscreen-sim'); 
+            fullscreenBtn.style.display = 'block'; 
+            exitFullscreenBtn.style.display = 'none'; 
+            document.querySelector('.audio-dashboard').style.display = 'flex'; 
+        } 
         
         // ========================================================= 
-        // ADDITIONAL SAFEGUARDS
+        // ADDITIONAL SAFEGUARDS 
         // ========================================================= 
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && !isAdPlaying) {
-                setTimeout(() => {
-                    twPlayer.play();
-                }, 100);
-            }
-        });
+        document.addEventListener('visibilitychange', () => { 
+            if (!document.hidden && !isAdPlaying) { 
+                setTimeout(() => { 
+                    twPlayer.play(); 
+                }, 100); 
+            } 
+        }); 
         
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                twPlayer.play();
-            }, 1000);
-        });
+        window.addEventListener('load', () => { 
+            setTimeout(() => { 
+                twPlayer.play(); 
+            }, 1000); 
+        }); 
     </script> 
 </body> 
 </html>
