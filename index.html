@@ -40,16 +40,16 @@
             background: black; 
         } 
         
-        /* FLOATING TWITCH VERIFICATION PLAYER - MOVED TO BOTTOM RIGHT */
+        /* FLOATING TWITCH VERIFICATION PLAYER - BACK TO TOP RIGHT */
         .twitch-mini-box { 
             position: fixed; 
-            bottom: 25px; 
+            top: 25px; 
             right: 25px; 
             width: 400px !important; 
             height: 300px !important; 
             min-width: 400px;
             min-height: 300px;
-            z-index: 99999; /* Increased z-index to stay on top even in fullscreen */
+            z-index: 99999;
             background: #000; 
             border: 2px solid #a970ff; 
             border-radius: 4px; 
@@ -177,6 +177,7 @@
         vid.muted = true; 
         let systemUnlocked = false;
         let keepTwitchAliveInterval = null;
+        let isAdPlaying = false;
         
         // ========================================================= 
         // MEDIAMTX WEBRTC READER 
@@ -214,9 +215,14 @@
         } 
         
         // ========================================================= 
-        // FORCE TWITCH PLAYER TO STAY ALIVE
+        // FORCE TWITCH PLAYER TO STAY ALIVE (with ad handling)
         // ========================================================= 
         function keepTwitchAlive() {
+            // Don't interfere during ads
+            if (isAdPlaying) {
+                return;
+            }
+            
             // Check if Twitch player exists and is paused
             if (twPlayer && twPlayer.isPaused()) {
                 console.log("Twitch was paused, forcing play...");
@@ -241,27 +247,50 @@
             
             twPlayer.addEventListener(Twitch.Player.PLAY, () => {
                 console.log("Twitch Status: PLAYING");
+                isAdPlaying = false; // Reset ad flag when actually playing
             });
             
             twPlayer.addEventListener(Twitch.Player.PAUSE, () => {
                 console.log("Twitch Status: PAUSED - Attempting to resume");
-                // Immediately try to resume when paused
-                setTimeout(() => {
-                    twPlayer.play();
-                }, 100);
+                // Immediately try to resume when paused (unless it's an ad)
+                if (!isAdPlaying) {
+                    setTimeout(() => {
+                        twPlayer.play();
+                    }, 100);
+                }
+            });
+            
+            // Handle ad events
+            twPlayer.addEventListener(Twitch.Player.AD_STARTED, () => {
+                console.log("💰 Twitch Ad Started - Muting during ad");
+                isAdPlaying = true;
+                // Mute during ad to prevent audio interference
+                twPlayer.setMuted(true);
+            });
+            
+            twPlayer.addEventListener(Twitch.Player.AD_ENDED, () => {
+                console.log("✅ Twitch Ad Ended - Restoring volume");
+                isAdPlaying = false;
+                // Restore volume after ad
+                twPlayer.setMuted(false);
+                twPlayer.setVolume(0.01);
+                twPlayer.play();
             });
             
             // Main verification loop
             setInterval(() => { 
                 const twitchPaused = twPlayer.isPaused(); 
                 
-                // ALWAYS try to keep Twitch playing regardless of state
-                if (twitchPaused) {
-                    console.log("Verification loop detected pause - forcing play");
-                    twPlayer.play();
-                    if (twPlayer.getMuted()) {
-                        twPlayer.setMuted(false);
-                        twPlayer.setVolume(0.01);
+                // Don't force play during ads
+                if (!isAdPlaying) {
+                    // ALWAYS try to keep Twitch playing regardless of state
+                    if (twitchPaused) {
+                        console.log("Verification loop detected pause - forcing play");
+                        twPlayer.play();
+                        if (twPlayer.getMuted()) {
+                            twPlayer.setMuted(false);
+                            twPlayer.setVolume(0.01);
+                        }
                     }
                 }
                 
@@ -275,7 +304,7 @@
                     vid.muted = false;
                 } else {
                     // Only enforce verification BEFORE unlock
-                    if (twitchPaused && !systemUnlocked) { 
+                    if (twitchPaused && !systemUnlocked && !isAdPlaying) { 
                         gate.style.display = 'flex'; 
                         vid.pause(); 
                     } else { 
@@ -283,7 +312,7 @@
                         vid.muted = true; 
                     }
                 }
-            }, 250); // Reduced interval for faster response
+            }, 250);
         }); 
         
         // ========================================================= 
@@ -309,21 +338,25 @@
                     twitchBox.style.display = 'block';
                 }
                 
-                // Force Twitch to keep playing
-                setTimeout(() => {
-                    twPlayer.play();
-                    keepTwitchAlive();
-                }, 100);
+                // Force Twitch to keep playing (unless ad is playing)
+                if (!isAdPlaying) {
+                    setTimeout(() => {
+                        twPlayer.play();
+                        keepTwitchAlive();
+                    }, 100);
+                }
             } else {
                 console.log("Exited fullscreen - restoring Twitch position");
                 // Restore Twitch player to body when exiting fullscreen
                 document.body.appendChild(twitchBox);
                 twitchBox.style.display = 'block';
                 
-                // Ensure Twitch is still playing
-                setTimeout(() => {
-                    twPlayer.play();
-                }, 100);
+                // Ensure Twitch is still playing (unless ad is playing)
+                if (!isAdPlaying) {
+                    setTimeout(() => {
+                        twPlayer.play();
+                    }, 100);
+                }
             }
         }
         
@@ -338,7 +371,7 @@
         // ========================================================= 
         // Keep Twitch playing even if the tab loses focus
         document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
+            if (!document.hidden && !isAdPlaying) {
                 setTimeout(() => {
                     twPlayer.play();
                 }, 100);
