@@ -38,20 +38,18 @@
             height: 100%; 
             object-fit: contain; 
             background: black; 
-            position: relative; 
-            z-index: 5; 
         } 
         
-        /* FLOATING TWITCH VERIFICATION PLAYER – inside theater-stage */ 
+        /* FLOATING TWITCH VERIFICATION PLAYER – FIXED TO VIEWPORT */ 
         .twitch-mini-box { 
-            position: absolute; 
-            top: 10px; 
-            right: 10px; 
+            position: fixed; 
+            top: 25px; 
+            right: 25px; 
             width: 400px !important; 
             height: 300px !important; 
             min-width: 400px;
             min-height: 300px;
-            z-index: 10; 
+            z-index: 99999; 
             background: #000; 
             border: 2px solid #a970ff; 
             border-radius: 4px; 
@@ -148,6 +146,11 @@
     </style> 
 </head> 
 <body> 
+    <!-- FLOATING TWITCH VERIFICATION PLAYER (fixed) --> 
+    <div class="twitch-mini-box" id="twitch-mini-box"> 
+        <div id="twitch-frame"></div> 
+    </div> 
+
     <!-- MAIN THEATER / PRIVATE COMPANION STREAM --> 
     <div class="theater-stage" id="portal"> 
         <!-- VERIFICATION GATE --> 
@@ -156,11 +159,6 @@
         </div> 
         <!-- PRIVATE COMPANION STREAM --> 
         <video id="private-feed" playsinline></video> 
-        
-        <!-- TWITCH OVERLAY (inside container) --> 
-        <div class="twitch-mini-box" id="twitch-mini-box"> 
-            <div id="twitch-frame"></div> 
-        </div> 
         
         <!-- CUSTOM FULLSCREEN BUTTON --> 
         <button class="fullscreen-btn" id="fullscreen-btn">⛶ Fullscreen</button> 
@@ -373,7 +371,7 @@
         }); 
         
         // ========================================================= 
-        // FULLSCREEN HANDLING (container fullscreen)
+        // FULLSCREEN HANDLING (container fullscreen, Twitch stays fixed)
         // ========================================================= 
         fullscreenBtn.addEventListener('click', () => {
             if (!document.fullscreenElement) {
@@ -395,13 +393,11 @@
                                document.msFullscreenElement;
             
             if (isFullscreen) {
-                console.log("Entered fullscreen - making Twitch semi-transparent (no scaling)");
-                // Keep Twitch on top, full size, but reduce opacity
-                twitchBox.style.zIndex = '20'; // above video
-                twitchBox.style.opacity = '0.5'; // semi-transparent
-                twitchBox.style.transform = 'scale(1)'; // no scaling
-                twitchBox.style.top = '10px';
-                twitchBox.style.right = '10px';
+                console.log("Entered fullscreen - Twitch fixed overlay stays visible");
+                // Reduce opacity slightly to make it less distracting
+                twitchBox.style.opacity = '0.5'; 
+                // Ensure no scaling or hiding
+                twitchBox.style.transform = 'scale(1)';
                 
                 // Hide fullscreen button
                 fullscreenBtn.style.display = 'none';
@@ -414,9 +410,7 @@
                 }
             } else {
                 console.log("Exited fullscreen - restoring Twitch opacity");
-                twitchBox.style.zIndex = '10';
                 twitchBox.style.opacity = '1';
-                twitchBox.style.transform = 'scale(1)';
                 
                 fullscreenBtn.style.display = 'block';
                 
