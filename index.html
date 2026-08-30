@@ -180,6 +180,39 @@
         let isAdPlaying = false;
         
         // ========================================================= 
+        // AD TESTING BADGE (TEMPORARY)
+        // ========================================================= 
+        function showAdStatus(message) {
+            let badge = document.getElementById('ad-status-badge');
+            if (!badge) {
+                badge = document.createElement('div');
+                badge.id = 'ad-status-badge';
+                badge.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 20px;
+                    background: rgba(0,0,0,0.8);
+                    color: #fff;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    z-index: 999999;
+                    pointer-events: none;
+                    border: 1px solid #a970ff;
+                `;
+                document.body.appendChild(badge);
+            }
+            badge.textContent = message;
+            badge.style.display = 'block';
+            // Auto-hide after 5 seconds
+            clearTimeout(badge._timeout);
+            badge._timeout = setTimeout(() => {
+                badge.style.display = 'none';
+            }, 5000);
+        }
+        
+        // ========================================================= 
         // MEDIAMTX WEBRTC READER 
         // ========================================================= 
         let webrtcReader = new MediaMTXWebRTCReader({ 
@@ -260,22 +293,35 @@
                 }
             });
             
-            // Handle ad events
+            // -------- AD EVENT LISTENERS (TESTING) --------
             twPlayer.addEventListener(Twitch.Player.AD_STARTED, () => {
-                console.log("💰 Twitch Ad Started - Muting during ad");
+                console.log("💰 AD STARTED");
                 isAdPlaying = true;
+                showAdStatus("AD PLAYING");
                 // Mute during ad to prevent audio interference
                 twPlayer.setMuted(true);
             });
             
-            twPlayer.addEventListener(Twitch.Player.AD_ENDED, () => {
-                console.log("✅ Twitch Ad Ended - Restoring volume");
+            twPlayer.addEventListener(Twitch.Player.AD_COMPLETED, () => {
+                console.log("✅ AD COMPLETED");
                 isAdPlaying = false;
+                showAdStatus("AD DONE");
                 // Restore volume after ad
                 twPlayer.setMuted(false);
                 twPlayer.setVolume(0.01);
                 twPlayer.play();
             });
+            
+            twPlayer.addEventListener(Twitch.Player.AD_ERROR, () => {
+                console.log("❌ AD ERROR");
+                showAdStatus("AD ERROR");
+                isAdPlaying = false;
+                // Attempt to restore normal playback
+                twPlayer.setMuted(false);
+                twPlayer.setVolume(0.01);
+                twPlayer.play();
+            });
+            // ------------------------------------------------
             
             // Main verification loop
             setInterval(() => { 
