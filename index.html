@@ -154,17 +154,17 @@
         const STREAM_SOURCE = 'https://trycloudflare.com'; 
         
         // ========================================================= 
-        // TWITCH PLAYER (Initializes muted to guarantee smooth autoplay)
+        // TWITCH PLAYER (Fixed for GitHub Pages domain)
         // ========================================================= 
         const twOptions = { 
             width: '100%', 
             height: '100%', 
             channel: CHANNEL_NAME, 
             muted: true, 
-            parent: [window.location.hostname] 
+            parent: ["blqyed.github.io", window.location.hostname] // 👈 ADD YOUR GITHUB PAGES DOMAIN HERE
         }; 
         const twPlayer = new Twitch.Player("twitch-frame", twOptions); 
-        
+ 
         // ========================================================= 
         // DOM ELEMENTS 
         // ========================================================= 
