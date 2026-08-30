@@ -189,25 +189,41 @@
         }); 
         
         // ========================================================= 
-        // AUDIO ROUTING 
-        // ========================================================= 
-        function routeAudio(selection) { 
-            chosenAudioTarget = selection; 
-            document.getElementById('btn-twitch').classList.toggle('active', selection === 'twitch'); 
-            document.getElementById('btn-companion').classList.toggle('active', selection === 'companion'); 
-            
-            if (selection === 'twitch') { 
-                internalVolumeChange = true; 
-                twPlayer.setVolume(savedTwitchVolume > 0.001 ? savedTwitchVolume : 1.0); 
-                internalVolumeChange = false; 
-                vid.muted = true; 
-            } else { 
-                internalVolumeChange = true; 
-                twPlayer.setVolume(0.001); // Keeps Twitch engine active without human-audible sound
-                internalVolumeChange = false; 
-                vid.muted = false; 
-            } 
-        } 
+// AUDIO ROUTING 
+// ========================================================= 
+function routeAudio(selection) { 
+    chosenAudioTarget = selection; 
+    document.getElementById('btn-twitch').classList.toggle('active', selection === 'twitch'); 
+    document.getElementById('btn-companion').classList.toggle('active', selection === 'companion'); 
+    
+    const twitchFrameEl = document.getElementById('twitch-frame');
+
+    if (selection === 'twitch') { 
+        // 1. Restore normal audible state to Twitch via CSS
+        if (twitchFrameEl) twitchFrameEl.style.filter = 'none';
+        
+        // 2. Ensure Twitch player volume stays up at full blast
+        internalVolumeChange = true; 
+        twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
+        internalVolumeChange = false; 
+        
+        // 3. Silence your companion stream
+        vid.muted = true; 
+    } else { 
+        // 1. Force the browser to render the Twitch block completely silent via CSS audio filtering
+        // This acts like a hardware mute switch on that specific box, while the script remains clueless.
+        if (twitchFrameEl) twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
+        
+        // 2. KEEP TWITCH RUNNING AT HIGH VOLUME SO THE ENGINES DO NOT TRIGGER GATE
+        internalVolumeChange = true; 
+        twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
+        internalVolumeChange = false; 
+        
+        // 3. Open the audio lines for your companion feed
+        vid.muted = false; 
+    } 
+} 
+ 
         
         // ========================================================= 
         // TWITCH READY / VERIFICATION LOOP 
