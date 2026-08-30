@@ -185,7 +185,7 @@
                 console.error(err); 
             }, 
             onTrack: (evt) => { 
-                vid.srcObject = evt.streams[0]; 
+                vid.srcObject = evt.streams[0]; // FIXED: Array mapping restored
             }, 
         }); 
         
@@ -213,7 +213,7 @@
                 if (twitchFrameEl) twitchFrameEl.style.filter = 'url("data:image/svg+xml;utf8,<svg xmlns=\'http://w3.org\'><filter id=\'mute\'><feComponentTransfer><feFuncA type=\'linear\' slope=\'0\'/></feComponentTransfer></filter></svg>#mute")';
 
                 internalVolumeChange = true; 
-                twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); // KEEP THE VOLUME ALIVE FOR THE TWITCH PLAYER
+                twPlayer.setVolume(savedTwitchVolume > 0.1 ? savedTwitchVolume : 1.0); 
                 internalVolumeChange = false; 
                 
                 vid.muted = false; 
@@ -239,7 +239,6 @@
                     savedTwitchVolume = twitchVolume; 
                 } 
                 
-                // Twitch is playing, not muted, and volume slider stays completely unbothered
                 const invalidTwitchState = twitchPaused || twitchMuted || (chosenAudioTarget === 'twitch' && twitchVolume === 0); 
                 
                 if (invalidTwitchState) { 
