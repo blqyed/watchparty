@@ -1,59 +1,440 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live Watch Lounge</title>
+
     <script src="./reader.js"></script>
     <script src="https://player.twitch.tv/js/embed/v1.js"></script>
+
     <style>
-        body { margin: 0; background: #0e0e10; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .box { width: 100%; max-width: 480px; margin-bottom: 15px; position: relative; }
-        h4 { margin: 8px 0; text-align: center; color: #a970ff; font-size: 14px; }
-        #portal { position: relative; }
-        #gate { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; text-align: center; font-weight: bold; color: #ff4f4f; padding: 20px; box-sizing: border-box; z-index: 100; display: none; }
-        video { width: 100%; background: black; }
+        body {
+            margin: 0;
+            background: #0e0e10;
+            color: white;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* MAIN THEATER CONTAINER */
+        .theater-stage {
+            width: 100%;
+            max-width: 960px;
+            position: relative;
+            margin-bottom: 15px;
+            background: black;
+            aspect-ratio: 16 / 9;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        /* MAIN PRIVATE COMPANION STREAM */
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: black;
+        }
+
+        /*
+         * FLOATING TWITCH VERIFICATION PLAYER
+         *
+         * Twitch's official minimum for an interactive
+         * video embed is 400x300.
+         */
+        .twitch-mini-box {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 400px;
+            height: 300px;
+            z-index: 50;
+            background: #000;
+            border: 2px solid #a970ff;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75);
+        }
+
+        #twitch-frame {
+            width: 100%;
+            height: 100%;
+        }
+
+        /*
+         * LOCK GATE
+         *
+         * z-index is intentionally BELOW the Twitch mini-player
+         * so the Twitch embed is never covered by the gate.
+         */
+        #gate {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-weight: bold;
+            color: #ff4f4f;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 40;
+            display: none;
+        }
+
+        /* INTERNAL AUDIO TOGGLE HUD */
+        .audio-dashboard {
+            display: flex;
+            background: #1f1f23;
+            border-radius: 6px;
+            padding: 4px;
+            width: 100%;
+            max-width: 960px;
+            box-sizing: border-box;
+            gap: 4px;
+        }
+
+        .audio-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #adadb8;
+            padding: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .audio-tab.active {
+            background: #a970ff;
+            color: white;
+        }
+
+        .audio-tab:hover:not(.active) {
+            background: #26262c;
+            color: white;
+        }
+
+        /*
+         * On smaller screens, keep the Twitch player at the
+         * required minimum dimensions rather than shrinking it
+         * below Twitch's supported size.
+         */
+        @media (max-width: 700px) {
+            .theater-stage {
+                overflow: auto;
+            }
+
+            .twitch-mini-box {
+                position: absolute;
+                top: 15px;
+                right: 15px;
+                width: 400px;
+                height: 300px;
+            }
+        }
     </style>
 </head>
+
 <body>
-    <div class="box">
-        <h4>1. ACTIVE TWITCH VERIFICATION FEED</h4>
-        <div id="twitch-frame"></div>
-    </div>
-    <div class="box" id="portal">
-        <h4>2. PRIVATE COMPANION STREAM</h4>
-        <div id="gate">⚠️ STREAM LOCKED<br>Unpause and unmute the Twitch frame above to watch!</div>
+
+    <!-- MAIN THEATER / PRIVATE COMPANION STREAM -->
+    <div class="theater-stage" id="portal">
+
+        <!-- VERIFICATION GATE -->
+        <div id="gate">
+            ⚠️ STREAM LOCKED<br>
+            Unpause and unmute the mini Twitch frame in the top-right to watch!
+        </div>
+
+        <!-- FLOATING TWITCH VERIFICATION PLAYER -->
+        <div class="twitch-mini-box">
+            <div id="twitch-frame"></div>
+        </div>
+
+        <!-- PRIVATE COMPANION STREAM -->
         <video id="private-feed" controls playsinline></video>
+
     </div>
+
+    <!-- INTERNAL AUDIO TOGGLE HUD -->
+    <div class="audio-dashboard">
+
+        <button
+            id="btn-twitch"
+            class="audio-tab active"
+            onclick="routeAudio('twitch')">
+            🔊 Listen to Twitch Feed
+        </button>
+
+        <button
+            id="btn-companion"
+            class="audio-tab"
+            onclick="routeAudio('companion')">
+            🔊 Listen to Companion Feed
+        </button>
+
+    </div>
+
     <script>
-        // CONFIGURATION: Set your Twitch channel and paste your Cloudflare Tunnel URL
+        // =========================================================
+        // CONFIGURATION
+        // =========================================================
+
         const CHANNEL_NAME = 'fraudvlent';
-        const STREAM_SOURCE = 'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep';
-        const twOptions = { width: '100%', height: 240, channel: CHANNEL_NAME, parent: [window.location.hostname] };
-        const twPlayer = new Twitch.Player("twitch-frame", twOptions);
+
+        // ORIGINAL WHEP SOURCE — UNCHANGED
+        const STREAM_SOURCE =
+            'https://chance-enzyme-stroke-msie.trycloudflare.com/live/watchparty/whep';
+
+
+        // =========================================================
+        // TWITCH PLAYER
+        // =========================================================
+
+        const twOptions = {
+            width: '100%',
+            height: '100%',
+            channel: CHANNEL_NAME,
+            parent: [window.location.hostname]
+        };
+
+        const twPlayer = new Twitch.Player(
+            "twitch-frame",
+            twOptions
+        );
+
+
+        // =========================================================
+        // DOM ELEMENTS
+        // =========================================================
+
         const vid = document.getElementById('private-feed');
         const gate = document.getElementById('gate');
 
+
+        // =========================================================
+        // AUDIO ROUTING STATE
+        // =========================================================
+
+        /*
+         * "twitch" = Twitch audio is audible.
+         * "companion" = Companion audio is audible.
+         */
+        let chosenAudioTarget = 'twitch';
+
+        /*
+         * Remember the Twitch volume the user actually wants.
+         *
+         * We never use Twitch's mute state to perform the
+         * internal audio switch.
+         */
+        let savedTwitchVolume = 1.0;
+
+        /*
+         * Prevent our own setVolume(0) from being interpreted
+         * as the user setting Twitch's volume to zero.
+         */
+        let internalVolumeChange = false;
+
+
+        // =========================================================
+        // MEDIAMTX WEBRTC READER
+        // =========================================================
+
         let webrtcReader = new MediaMTXWebRTCReader({
+
             url: STREAM_SOURCE,
-            onError: (err) => { console.error(err); },
+
+            onError: (err) => {
+                console.error(err);
+            },
+
             onTrack: (evt) => {
                 vid.srcObject = evt.streams[0];
             },
+
         });
 
-        // Wait for the Twitch embed to actually finish loading before polling
-        // it — calling isPaused()/getMuted() too early can throw errors.
-        twPlayer.addEventListener(Twitch.Player.READY, () => {
-            setInterval(() => {
-                if (twPlayer.isPaused() || twPlayer.getMuted() || twPlayer.getVolume() === 0) {
-                    gate.style.display = 'flex';
-                    vid.pause();
-                } else {
-                    gate.style.display = 'none';
+
+        // =========================================================
+        // AUDIO ROUTING
+        // =========================================================
+
+        function routeAudio(selection) {
+
+            chosenAudioTarget = selection;
+
+            // Update active button
+            document
+                .getElementById('btn-twitch')
+                .classList.toggle(
+                    'active',
+                    selection === 'twitch'
+                );
+
+            document
+                .getElementById('btn-companion')
+                .classList.toggle(
+                    'active',
+                    selection === 'companion'
+                );
+
+
+            if (selection === 'twitch') {
+
+                /*
+                 * TWITCH AUDIO
+                 *
+                 * Twitch remains UNMUTED.
+                 */
+                internalVolumeChange = true;
+
+                twPlayer.setVolume(
+                    savedTwitchVolume > 0
+                        ? savedTwitchVolume
+                        : 1.0
+                );
+
+                internalVolumeChange = false;
+
+                // Companion becomes silent.
+                vid.muted = true;
+
+            } else {
+
+                /*
+                 * COMPANION AUDIO
+                 *
+                 * IMPORTANT:
+                 *
+                 * We DO NOT call:
+                 *
+                 *     twPlayer.setMuted(true)
+                 *
+                 * Twitch therefore remains technically UNMUTED.
+                 *
+                 * Instead, we set Twitch's volume to zero.
+                 */
+                internalVolumeChange = true;
+
+                twPlayer.setVolume(0);
+
+                internalVolumeChange = false;
+
+                // Companion becomes audible.
+                vid.muted = false;
+            }
+        }
+
+
+        // =========================================================
+        // TWITCH READY / VERIFICATION LOOP
+        // =========================================================
+
+        twPlayer.addEventListener(
+            Twitch.Player.READY,
+            () => {
+
+                /*
+                 * Start with Twitch as the selected audio source.
+                 */
+                savedTwitchVolume = twPlayer.getVolume();
+
+                if (
+                    !savedTwitchVolume ||
+                    savedTwitchVolume <= 0
+                ) {
+                    savedTwitchVolume = 1.0;
                 }
-            }, 1000);
-        });
+
+                routeAudio('twitch');
+
+
+                /*
+                 * Poll Twitch's actual playback state.
+                 */
+                setInterval(() => {
+
+                    const twitchMuted =
+                        twPlayer.getMuted();
+
+                    const twitchPaused =
+                        twPlayer.isPaused();
+
+                    const twitchVolume =
+                        twPlayer.getVolume();
+
+
+                    /*
+                     * If the user manually changes Twitch's
+                     * volume while Twitch audio is selected,
+                     * remember that volume.
+                     *
+                     * When Companion mode is active, volume 0
+                     * is intentional and therefore isn't saved.
+                     */
+                    if (
+                        chosenAudioTarget === 'twitch' &&
+                        !internalVolumeChange &&
+                        twitchVolume > 0
+                    ) {
+                        savedTwitchVolume = twitchVolume;
+                    }
+
+
+                    /*
+                     * VERIFICATION
+                     *
+                     * A volume of zero is allowed while the
+                     * internal Companion Audio button is selected.
+                     *
+                     * The Twitch player itself must still be:
+                     *
+                     *   - playing
+                     *   - NOT muted
+                     */
+                    const invalidTwitchState =
+                        twitchPaused ||
+                        twitchMuted ||
+                        (
+                            chosenAudioTarget === 'twitch' &&
+                            twitchVolume === 0
+                        );
+
+
+                    if (invalidTwitchState) {
+
+                        gate.style.display = 'flex';
+
+                        vid.pause();
+
+                    } else {
+
+                        gate.style.display = 'none';
+                    }
+
+                }, 1000);
+            }
+        );
+
     </script>
+
 </body>
 </html>
+```
