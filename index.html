@@ -96,10 +96,7 @@
     /* TWITCH EMBED */
     .twitch-mini-box {
         position: fixed;
-
-        /* Flush with top edge */
         top: 0;
-
         right: 25px;
 
         width: 400px !important;
@@ -108,7 +105,6 @@
         min-width: 400px;
         min-height: 300px;
 
-        /* Twitch remains above the private video */
         z-index: 99999;
 
         background: #000;
@@ -121,7 +117,9 @@
 
         pointer-events: none;
 
-        transition: right 0.15s ease;
+        transition:
+            right 0.15s ease,
+            opacity 0.15s ease;
     }
 
     #twitch-frame {
@@ -131,16 +129,16 @@
     }
 
     /*
-     * 45% VISIBILITY TEST
+     * FULLSCREEN TEST
      *
-     * Twitch player ≈ 400px wide.
-     *
-     * 45% ≈ 180px visible.
-     * Shift right ≈ 220px.
+     * 400px Twitch box
+     * ~45% horizontally visible
+     * 80% opacity
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
         right: -220px;
+        opacity: 0.8;
     }
 
     /* LOCK GATE */
@@ -237,7 +235,7 @@
     <div id="twitch-frame"></div>
 </div>
 
-<!-- MAIN PRIVATE STREAM -->
+<!-- PRIVATE STREAM -->
 <div
     class="theater-stage"
     id="portal"
@@ -421,8 +419,8 @@
         }
 
         /*
-         * During visual fullscreen we deliberately allow
-         * Twitch to manage its own playback state.
+         * During visual fullscreen, allow Twitch to manage
+         * its own playback state.
          */
         if (visualFullscreen) {
             return;
@@ -505,7 +503,6 @@
             );
 
 
-            // Main verification loop
             setInterval(() => {
 
                 const twitchPaused =
@@ -541,7 +538,9 @@
                 }
 
 
-                // Keep private stream playing
+                /*
+                 * Keep private stream playing.
+                 */
                 if (systemUnlocked) {
 
                     gate.style.display =
@@ -623,7 +622,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 45%'
+            'Twitch visibility test: approximately 45% + 80% opacity'
         );
 
     }
@@ -676,7 +675,7 @@
 
 
     // =========================================================
-    // CUSTOM FULLSCREEN BUTTON
+    // FULLSCREEN BUTTON
     // =========================================================
 
     fullscreenBtn.addEventListener(
