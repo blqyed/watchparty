@@ -71,20 +71,15 @@
         right: 12px;
         bottom: 12px;
         z-index: 10001;
-
         border: 0;
         border-radius: 6px;
         padding: 8px 12px;
-
         background: rgba(0, 0, 0, 0.75);
         color: white;
-
         font-size: 14px;
         font-weight: bold;
-
         cursor: pointer;
         user-select: none;
-
         transition: background 0.15s ease;
     }
 
@@ -101,7 +96,6 @@
     /* TWITCH EMBED */
     .twitch-mini-box {
         position: fixed;
-
         top: 25px;
         right: 25px;
 
@@ -112,25 +106,20 @@
         min-height: 300px;
 
         /*
-         * IMPORTANT:
-         * Twitch stays ABOVE the private video during the test.
-         *
-         * This is intentional so we can determine whether
-         * approximately 25% visibility is enough for Twitch.
+         * Twitch intentionally stays ABOVE the private video
+         * for the visibility experiment.
          */
         z-index: 99999;
 
         background: #000;
         border: 2px solid #a970ff;
         border-radius: 4px;
-
         overflow: hidden;
 
         box-shadow:
             0 4px 15px rgba(0, 0, 0, 0.75);
 
         pointer-events: none;
-
         transition: right 0.15s ease;
     }
 
@@ -141,16 +130,16 @@
     }
 
     /*
-     * When visual fullscreen is active:
+     * 75% VISIBILITY TEST
      *
-     * Twitch box = 400px wide
-     * right = -300px
+     * Twitch box is approximately 400px wide.
+     * Moving it 100px to the right leaves about 300px
+     * of the 400px width inside a 1920px viewport.
      *
-     * Approximately 100px remains inside a 1920px viewport.
+     * 300 / 400 = 75%
      */
-    body.private-visual-fullscreen
-    .twitch-mini-box {
-        right: -300px;
+    body.private-visual-fullscreen .twitch-mini-box {
+        right: -100px;
     }
 
     /* LOCK GATE */
@@ -158,7 +147,6 @@
         position: absolute;
         top: 0;
         left: 0;
-
         width: 100%;
         height: 100%;
 
@@ -176,7 +164,6 @@
         box-sizing: border-box;
 
         z-index: 40;
-
         display: none;
     }
 
@@ -225,7 +212,6 @@
         background: #a970ff;
         color: white;
         border-color: #a970ff;
-
         cursor: default;
     }
 
@@ -433,6 +419,14 @@
             return;
         }
 
+        /*
+         * During visual fullscreen we deliberately allow
+         * Twitch to manage its own playback state.
+         */
+        if (visualFullscreen) {
+            return;
+        }
+
         if (twPlayer.isPaused()) {
 
             console.log(
@@ -465,9 +459,6 @@
             twPlayer.play();
 
 
-            /*
-             * Normal-mode Twitch keep-alive.
-             */
             keepTwitchAliveInterval =
                 setInterval(
                     keepTwitchAlive,
@@ -496,8 +487,8 @@
                     );
 
                     /*
-                     * During the visibility experiment,
-                     * let Twitch naturally decide its state.
+                     * Do not force Twitch during
+                     * visual fullscreen.
                      */
                     if (!visualFullscreen) {
 
@@ -513,9 +504,6 @@
             );
 
 
-            /*
-             * Main verification loop.
-             */
             setInterval(() => {
 
                 const twitchPaused =
@@ -523,14 +511,11 @@
 
 
                 /*
-                 * IMPORTANT:
+                 * Normal mode:
+                 * keep Twitch playing.
                  *
-                 * During visual fullscreen we do NOT
-                 * force Twitch to play.
-                 *
-                 * This lets us determine whether the
-                 * approximately 25%-visible embed can
-                 * naturally remain active.
+                 * Visual fullscreen:
+                 * allow Twitch to manage itself.
                  */
                 if (
                     twitchPaused &&
@@ -554,9 +539,6 @@
                 }
 
 
-                /*
-                 * Keep private stream playing.
-                 */
                 if (systemUnlocked) {
 
                     gate.style.display =
@@ -638,7 +620,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 25%'
+            'Twitch visibility test: approximately 75%'
         );
 
     }
@@ -691,7 +673,7 @@
 
 
     // =========================================================
-    // CUSTOM FULLSCREEN BUTTON
+    // FULLSCREEN BUTTON
     // =========================================================
 
     fullscreenBtn.addEventListener(
@@ -701,7 +683,7 @@
 
 
     // =========================================================
-    // DOUBLE CLICK FULLSCREEN
+    // DOUBLE CLICK
     // =========================================================
 
     vid.addEventListener(
@@ -739,10 +721,6 @@
         'visibilitychange',
         () => {
 
-            /*
-             * During visual fullscreen,
-             * don't interfere with Twitch's state.
-             */
             if (
                 !document.hidden &&
                 !visualFullscreen
