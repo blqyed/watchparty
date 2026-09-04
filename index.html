@@ -109,8 +109,8 @@
         min-height: 300px;
 
         /*
-         * Twitch remains above the private video during
-         * the visibility threshold experiment.
+         * Keep Twitch above the private stream for the
+         * visibility-threshold experiment.
          */
         z-index: 99999;
 
@@ -134,21 +134,20 @@
     }
 
     /*
-     * 30% VISIBILITY TEST
+     * 40% VISIBILITY TEST
      *
-     * Approximate Twitch width = 400px.
+     * Twitch player is approximately 400px wide.
      *
-     * right: -280px leaves approximately:
+     * 40% of 400px = 160px.
      *
-     * 400 - 280 = 120px
+     * Moving the 400px box 240px beyond the right edge
+     * leaves approximately 160px visible.
      *
-     * visible.
-     *
-     * 120 / 400 = 30%
+     * 160 / 400 = 40%
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
-        right: -280px;
+        right: -240px;
     }
 
     /* LOCK GATE */
@@ -429,8 +428,8 @@
         }
 
         /*
-         * During visual fullscreen we deliberately allow
-         * Twitch to manage its own playback state.
+         * During visual fullscreen, allow Twitch to manage
+         * its own state for the visibility experiment.
          */
         if (visualFullscreen) {
             return;
@@ -496,9 +495,8 @@
                     );
 
                     /*
-                     * During visual fullscreen, allow Twitch
-                     * to naturally decide whether playback
-                     * continues.
+                     * During visual fullscreen,
+                     * let Twitch decide naturally.
                      */
                     if (!visualFullscreen) {
 
@@ -522,10 +520,10 @@
 
                 /*
                  * Normal mode:
-                 * Keep Twitch alive.
+                 * keep Twitch alive.
                  *
                  * Visual fullscreen:
-                 * Do not force Twitch to play.
+                 * do not force Twitch.
                  */
                 if (
                     twitchPaused &&
@@ -633,7 +631,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 30%'
+            'Twitch visibility test: approximately 40%'
         );
 
     }
