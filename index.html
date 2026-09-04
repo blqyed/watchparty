@@ -96,7 +96,10 @@
     /* TWITCH EMBED */
     .twitch-mini-box {
         position: fixed;
+
+        /* Flush with the top edge */
         top: 0;
+
         right: 25px;
 
         width: 400px !important;
@@ -105,6 +108,10 @@
         min-width: 400px;
         min-height: 300px;
 
+        /*
+         * Twitch remains above the private video during
+         * the visibility-threshold experiment.
+         */
         z-index: 99999;
 
         background: #000;
@@ -117,9 +124,7 @@
 
         pointer-events: none;
 
-        transition:
-            right 0.15s ease,
-            opacity 0.15s ease;
+        transition: right 0.15s ease;
     }
 
     #twitch-frame {
@@ -129,16 +134,20 @@
     }
 
     /*
-     * FULLSCREEN TEST
+     * 45% VISIBILITY TEST
      *
-     * 400px Twitch box
-     * ~45% horizontally visible
-     * 80% opacity
+     * Twitch box is approximately 400px wide.
+     *
+     * 45% of 400px = 180px.
+     *
+     * Moving it approximately 220px to the right
+     * leaves approximately 180px visible.
+     *
+     * 180 / 400 = 45%
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
         right: -220px;
-        opacity: 0.0;
     }
 
     /* LOCK GATE */
@@ -419,8 +428,8 @@
         }
 
         /*
-         * During visual fullscreen, allow Twitch to manage
-         * its own playback state.
+         * During visual fullscreen we deliberately allow
+         * Twitch to manage its own playback state.
          */
         if (visualFullscreen) {
             return;
@@ -622,7 +631,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 45% + 80% opacity'
+            'Twitch visibility test: approximately 45%'
         );
 
     }
