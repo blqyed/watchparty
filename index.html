@@ -96,7 +96,11 @@
     /* TWITCH EMBED */
     .twitch-mini-box {
         position: fixed;
-        top: 25px;
+
+        /*
+         * Moved much closer to the top edge.
+         */
+        top: 5px;
         right: 25px;
 
         width: 400px !important;
@@ -106,8 +110,8 @@
         min-height: 300px;
 
         /*
-         * Twitch intentionally stays ABOVE the private video
-         * for the visibility experiment.
+         * Twitch remains above the private video so we can
+         * test how little of the player can remain visible.
          */
         z-index: 99999;
 
@@ -120,6 +124,7 @@
             0 4px 15px rgba(0, 0, 0, 0.75);
 
         pointer-events: none;
+
         transition: right 0.15s ease;
     }
 
@@ -130,16 +135,18 @@
     }
 
     /*
-     * 75% VISIBILITY TEST
+     * 50% VISIBILITY TEST
      *
-     * Twitch box is approximately 400px wide.
-     * Moving it 100px to the right leaves about 300px
-     * of the 400px width inside a 1920px viewport.
+     * Approximate Twitch box width = 400px.
      *
-     * 300 / 400 = 75%
+     * right: -200px means approximately 200px of the
+     * 400px player remains inside a 1920px viewport.
+     *
+     * 200 / 400 = 50%.
      */
-    body.private-visual-fullscreen .twitch-mini-box {
-        right: -100px;
+    body.private-visual-fullscreen
+    .twitch-mini-box {
+        right: -200px;
     }
 
     /* LOCK GATE */
@@ -487,8 +494,8 @@
                     );
 
                     /*
-                     * Do not force Twitch during
-                     * visual fullscreen.
+                     * During visual fullscreen, let Twitch
+                     * naturally decide whether playback continues.
                      */
                     if (!visualFullscreen) {
 
@@ -512,10 +519,10 @@
 
                 /*
                  * Normal mode:
-                 * keep Twitch playing.
+                 * Keep Twitch alive.
                  *
                  * Visual fullscreen:
-                 * allow Twitch to manage itself.
+                 * Do not force Twitch to play.
                  */
                 if (
                     twitchPaused &&
@@ -539,6 +546,9 @@
                 }
 
 
+                /*
+                 * Keep private stream playing.
+                 */
                 if (systemUnlocked) {
 
                     gate.style.display =
@@ -620,7 +630,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 75%'
+            'Twitch visibility test: approximately 50%'
         );
 
     }
