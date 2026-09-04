@@ -96,7 +96,10 @@
     /* TWITCH EMBED */
     .twitch-mini-box {
         position: fixed;
+
+        /* Flush with top edge */
         top: 0;
+
         right: 25px;
 
         width: 400px !important;
@@ -106,6 +109,7 @@
         min-height: 300px;
 
         /*
+         * IMPORTANT:
          * Twitch remains above the private video.
          */
         z-index: 99999;
@@ -130,14 +134,13 @@
     }
 
     /*
-     * 45% VISIBILITY TEST
+     * KNOWN WORKING 45% VISIBILITY TEST
      *
-     * Approximate Twitch width = 400px.
+     * Twitch box ≈ 400px wide.
+     * right: -220px
+     * leaves ≈ 180px visible.
      *
-     * 45% of 400px ≈ 180px.
-     *
-     * right: -220px leaves approximately 180px
-     * inside a 1920px-wide viewport.
+     * 180 / 400 ≈ 45%
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
@@ -422,8 +425,8 @@
         }
 
         /*
-         * During visual fullscreen, let Twitch manage
-         * its own playback state.
+         * During visual fullscreen we deliberately allow
+         * Twitch to manage its own playback state.
          */
         if (visualFullscreen) {
             return;
@@ -461,6 +464,9 @@
             twPlayer.play();
 
 
+            /*
+             * Keep Twitch alive during normal viewing.
+             */
             keepTwitchAliveInterval =
                 setInterval(
                     keepTwitchAlive,
@@ -490,7 +496,7 @@
 
                     /*
                      * During visual fullscreen,
-                     * let Twitch decide naturally.
+                     * Twitch controls its own state.
                      */
                     if (!visualFullscreen) {
 
@@ -506,7 +512,9 @@
             );
 
 
-            // Main verification loop
+            /*
+             * Main verification loop.
+             */
             setInterval(() => {
 
                 const twitchPaused =
@@ -542,7 +550,9 @@
                 }
 
 
-                // Keep private stream playing
+                /*
+                 * Keep private stream playing.
+                 */
                 if (systemUnlocked) {
 
                     gate.style.display =
