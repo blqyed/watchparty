@@ -45,10 +45,7 @@
         background: black; 
     }
 
-    /*
-     * VISUAL FULLSCREEN
-     * This does NOT use the browser's native fullscreen API.
-     */
+    /* VISUAL FULLSCREEN */
     #private-feed.visual-fullscreen {
         position: fixed !important;
         inset: 0 !important;
@@ -67,29 +64,21 @@
         overflow: hidden;
     }
 
-    /*
-     * CUSTOM FULLSCREEN BUTTON
-     */
+    /* CUSTOM FULLSCREEN BUTTON */
     #custom-fullscreen-btn {
         position: absolute;
         right: 12px;
         bottom: 12px;
         z-index: 10001;
-
         border: 0;
         border-radius: 6px;
-
         padding: 8px 12px;
-
         background: rgba(0, 0, 0, 0.75);
         color: white;
-
         font-size: 14px;
         font-weight: bold;
-
         cursor: pointer;
         user-select: none;
-
         transition: background 0.15s ease;
     }
 
@@ -97,10 +86,6 @@
         background: rgba(40, 40, 40, 0.9);
     }
 
-    /*
-     * When visual fullscreen is active, move the custom button
-     * to the bottom-right of the viewport.
-     */
     #custom-fullscreen-btn.visual-fullscreen-button {
         position: fixed;
         right: 18px;
@@ -215,9 +200,7 @@
         ⚠️ STREAM LOCKED<br> Keep the mini Twitch frame running in the top-right to watch! 
     </div> 
 
-    <!-- PRIVATE COMPANION STREAM
-         Native fullscreen button removed.
-         Our custom fullscreen button is used instead. -->
+    <!-- PRIVATE COMPANION STREAM --> 
     <video 
         id="private-feed" 
         playsinline 
@@ -331,6 +314,14 @@
     // ========================================================= 
     function keepTwitchAlive() {
 
+        // IMPORTANT:
+        // During visual fullscreen we deliberately DO NOT
+        // force Twitch to play. This lets Twitch determine
+        // its own state naturally.
+        if (visualFullscreen) {
+            return;
+        }
+
         if (twPlayer && twPlayer.isPaused()) {
 
             console.log("Twitch was paused, forcing play...");
@@ -355,7 +346,6 @@
 
             twPlayer.play();
             
-            // Start aggressive keep-alive interval
             keepTwitchAliveInterval = setInterval(
                 keepTwitchAlive, 
                 500
@@ -373,12 +363,17 @@
                 () => {
 
                     console.log(
-                        "Twitch Status: PAUSED - Attempting to resume"
+                        "Twitch Status: PAUSED"
                     );
 
-                    setTimeout(() => {
-                        twPlayer.play();
-                    }, 100);
+                    // IMPORTANT:
+                    // During visual fullscreen we let Twitch
+                    // decide whether playback can continue.
+                    if (!visualFullscreen) {
+                        setTimeout(() => {
+                            twPlayer.play();
+                        }, 100);
+                    }
 
                 }
             );
@@ -388,7 +383,9 @@
 
                 const twitchPaused = twPlayer.isPaused(); 
             
-                if (twitchPaused) {
+                // IMPORTANT:
+                // Don't force Twitch during visual fullscreen.
+                if (twitchPaused && !visualFullscreen) {
 
                     console.log(
                         "Verification loop detected pause - forcing play"
@@ -460,7 +457,7 @@
         fullscreenBtn.innerHTML = '⛶ Exit Fullscreen';
 
         console.log(
-            'Entered VISUAL fullscreen'
+            'Entered VISUAL fullscreen - Twitch left to manage itself'
         );
     }
 
@@ -481,6 +478,14 @@
         console.log(
             'Exited VISUAL fullscreen'
         );
+
+        // Once we're back in normal mode, resume the
+        // normal Twitch keep-alive behavior.
+        setTimeout(() => {
+            if (twPlayer && twPlayer.isPaused()) {
+                twPlayer.play();
+            }
+        }, 100);
     }
 
     function toggleVisualFullscreen() {
@@ -499,7 +504,7 @@
         toggleVisualFullscreen
     );
 
-    // Double-clicking the private video also toggles visual fullscreen.
+    // Double-clicking the private video toggles visual fullscreen.
     vid.addEventListener(
         'dblclick',
         toggleVisualFullscreen
@@ -526,11 +531,13 @@
     // ADDITIONAL SAFEGUARDS 
     // ========================================================= 
 
+    // If the tab becomes visible again, normally resume Twitch.
+    // During visual fullscreen we deliberately leave Twitch alone.
     document.addEventListener(
         'visibilitychange',
         () => {
 
-            if (!document.hidden) {
+            if (!document.hidden && !visualFullscreen) {
 
                 setTimeout(() => {
                     twPlayer.play();
