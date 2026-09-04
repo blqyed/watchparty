@@ -1,48 +1,49 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 
-<html lang="en"> 
-<head> 
-    <meta charset="UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Live Watch Lounge</title> 
-    <script src="./reader.js"></script> 
-    <script src="https://player.twitch.tv/js/embed/v1.js"></script> 
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Watch Lounge</title>
 
 ```
-<style> 
-    body { 
-        margin: 0; 
-        background: #0e0e10; 
-        color: white; 
-        font-family: sans-serif; 
-        display: flex; 
-        flex-direction: column; 
-        align-items: center; 
-        min-height: 100vh; 
-        padding: 10px; 
-        box-sizing: border-box; 
-        position: relative; 
-    } 
+<script src="./reader.js"></script>
+<script src="https://player.twitch.tv/js/embed/v1.js"></script>
 
-    /* MAIN THEATER CONTAINER */ 
-    .theater-stage { 
-        width: 100%; 
-        max-width: 960px; 
-        position: relative; 
-        margin-bottom: 15px; 
-        background: black; 
-        aspect-ratio: 16 / 9; 
-        border-radius: 8px; 
-        overflow: hidden; 
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); 
-    } 
+<style>
+    body {
+        margin: 0;
+        background: #0e0e10;
+        color: white;
+        font-family: sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: 100vh;
+        padding: 10px;
+        box-sizing: border-box;
+        position: relative;
+    }
 
-    /* MAIN PRIVATE COMPANION STREAM */ 
-    video { 
-        width: 100%; 
-        height: 100%; 
-        object-fit: contain; 
-        background: black; 
+    /* MAIN THEATER CONTAINER */
+    .theater-stage {
+        width: 100%;
+        max-width: 960px;
+        position: relative;
+        margin-bottom: 15px;
+        background: black;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    /* PRIVATE STREAM */
+    video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        background: black;
     }
 
     /* VISUAL FULLSCREEN */
@@ -70,15 +71,20 @@
         right: 12px;
         bottom: 12px;
         z-index: 10001;
+
         border: 0;
         border-radius: 6px;
         padding: 8px 12px;
+
         background: rgba(0, 0, 0, 0.75);
         color: white;
+
         font-size: 14px;
         font-weight: bold;
+
         cursor: pointer;
         user-select: none;
+
         transition: background 0.15s ease;
     }
 
@@ -91,125 +97,181 @@
         right: 18px;
         bottom: 18px;
     }
-    
-    /* FLOATING TWITCH VERIFICATION PLAYER */ 
-    .twitch-mini-box { 
-        position: fixed; 
-        top: 25px; 
-        right: 25px; 
-        width: 400px !important; 
-        height: 300px !important; 
+
+    /* TWITCH EMBED */
+    .twitch-mini-box {
+        position: fixed;
+
+        top: 25px;
+        right: 25px;
+
+        width: 400px !important;
+        height: 300px !important;
+
         min-width: 400px;
         min-height: 300px;
-        z-index: 999; 
-        background: #000; 
-        border: 2px solid #a970ff; 
-        border-radius: 4px; 
-        overflow: hidden; 
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.75); 
-        pointer-events: none; 
-    } 
 
-    #twitch-frame { 
-        width: 100%; 
-        height: 100%; 
-        pointer-events: none; 
-    } 
-    
-    /* LOCK GATE */ 
-    #gate { 
-        position: absolute; 
-        top: 0; 
-        left: 0; 
-        width: 100%; 
-        height: 100%; 
-        background: rgba(0, 0, 0, 0.95); 
-        display: flex; 
-        justify-content: center; 
-        align-items: center; 
-        text-align: center; 
-        font-weight: bold; 
-        color: #ff4f4f; 
-        padding: 20px; 
-        box-sizing: border-box; 
-        z-index: 40; 
-        display: none; 
-    } 
-    
-    /* STREAMLINED AUDIO UNLOCK ACTION HUB */ 
-    .audio-dashboard { 
-        display: flex; 
-        background: #1f1f23; 
-        border-radius: 6px; 
-        padding: 4px; 
-        width: 100%; 
-        max-width: 960px; 
-        box-sizing: border-box; 
-    } 
+        /*
+         * IMPORTANT:
+         * Twitch stays ABOVE the private video during the test.
+         *
+         * This is intentional so we can determine whether
+         * approximately 25% visibility is enough for Twitch.
+         */
+        z-index: 99999;
 
-    .audio-tab { 
-        flex: 1; 
-        background: #26262c; 
-        border: 1px solid #3a3a44; 
-        color: #adadb8; 
-        padding: 14px; 
-        font-weight: bold; 
-        cursor: pointer; 
-        border-radius: 4px; 
-        transition: all 0.2s ease; 
-        font-size: 14px; 
-        text-align: center; 
-    } 
+        background: #000;
+        border: 2px solid #a970ff;
+        border-radius: 4px;
 
-    .audio-tab:hover { 
-        background: #33333b; 
-        color: white; 
+        overflow: hidden;
+
+        box-shadow:
+            0 4px 15px rgba(0, 0, 0, 0.75);
+
+        pointer-events: none;
+
+        transition: right 0.15s ease;
+    }
+
+    #twitch-frame {
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    /*
+     * When visual fullscreen is active:
+     *
+     * Twitch box = 400px wide
+     * right = -300px
+     *
+     * Approximately 100px remains inside a 1920px viewport.
+     */
+    body.private-visual-fullscreen
+    .twitch-mini-box {
+        right: -300px;
+    }
+
+    /* LOCK GATE */
+    #gate {
+        position: absolute;
+        top: 0;
+        left: 0;
+
+        width: 100%;
+        height: 100%;
+
+        background: rgba(0, 0, 0, 0.95);
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        text-align: center;
+        font-weight: bold;
+        color: #ff4f4f;
+
+        padding: 20px;
+        box-sizing: border-box;
+
+        z-index: 40;
+
+        display: none;
+    }
+
+    /* AUDIO DASHBOARD */
+    .audio-dashboard {
+        display: flex;
+
+        background: #1f1f23;
+        border-radius: 6px;
+        padding: 4px;
+
+        width: 100%;
+        max-width: 960px;
+
+        box-sizing: border-box;
+    }
+
+    .audio-tab {
+        flex: 1;
+
+        background: #26262c;
+        border: 1px solid #3a3a44;
+
+        color: #adadb8;
+
+        padding: 14px;
+
+        font-weight: bold;
+        cursor: pointer;
+
+        border-radius: 4px;
+
+        transition: all 0.2s ease;
+
+        font-size: 14px;
+        text-align: center;
+    }
+
+    .audio-tab:hover {
+        background: #33333b;
+        color: white;
         border-color: #a970ff;
     }
 
-    .audio-tab.activated { 
-        background: #a970ff; 
-        color: white; 
+    .audio-tab.activated {
+        background: #a970ff;
+        color: white;
         border-color: #a970ff;
+
         cursor: default;
-    } 
+    }
 
-    @media (max-width: 700px) { 
-        .twitch-mini-box { 
-            display: none; 
-        } 
-    } 
-</style> 
+    @media (max-width: 700px) {
+        .twitch-mini-box {
+            display: none;
+        }
+    }
+</style>
 ```
 
-</head> 
+</head>
 
-<body> 
+<body>
 
 ```
-<!-- FLOATING TWITCH VERIFICATION PLAYER --> 
-<div class="twitch-mini-box" id="twitch-mini-box"> 
-    <div id="twitch-frame"></div> 
-</div> 
+<!-- TWITCH VERIFICATION PLAYER -->
+<div
+    class="twitch-mini-box"
+    id="twitch-mini-box"
+>
+    <div id="twitch-frame"></div>
+</div>
 
-<!-- MAIN THEATER / PRIVATE COMPANION STREAM --> 
-<div class="theater-stage" id="portal"> 
+<!-- PRIVATE STREAM -->
+<div
+    class="theater-stage"
+    id="portal"
+>
 
-    <!-- VERIFICATION GATE --> 
-    <div id="gate"> 
-        ⚠️ STREAM LOCKED<br> Keep the mini Twitch frame running in the top-right to watch! 
-    </div> 
+    <!-- VERIFICATION GATE -->
+    <div id="gate">
+        ⚠️ STREAM LOCKED<br>
+        Keep the mini Twitch frame running in the top-right to watch!
+    </div>
 
-    <!-- PRIVATE COMPANION STREAM --> 
-    <video 
-        id="private-feed" 
-        playsinline 
-        controls 
+    <!-- PRIVATE VIDEO -->
+    <video
+        id="private-feed"
+        playsinline
+        controls
         controlsList="nofullscreen"
     ></video>
 
-    <!-- CUSTOM VISUAL FULLSCREEN BUTTON -->
-    <button 
+    <!-- CUSTOM FULLSCREEN -->
+    <button
         id="custom-fullscreen-btn"
         type="button"
         aria-label="Toggle fullscreen"
@@ -217,175 +279,263 @@
         ⛶ Fullscreen
     </button>
 
-</div> 
+</div>
 
-<!-- MASTER WATCH ENGAGEMENT DASHBOARD --> 
-<div class="audio-dashboard"> 
-    <button 
-        id="btn-audio-unlock" 
-        class="audio-tab" 
+<!-- AUDIO / UNLOCK BUTTON -->
+<div class="audio-dashboard">
+    <button
+        id="btn-audio-unlock"
+        class="audio-tab"
         onclick="unlockAlternativeStream()"
-    > 
+    >
         📺 Click to Watch Alternative Livestream
-    </button> 
-</div> 
+    </button>
+</div>
 
-<script> 
+<script>
 
-    // ========================================================= 
-    // CONFIGURATION 
-    // ========================================================= 
-    const CHANNEL_NAME = 'fraudvlent'; 
-    const STREAM_SOURCE = 'https://rain-fields-primarily-settlement.trycloudflare.com/live/watchparty/whep'; 
-    
-    // ========================================================= 
-    // TWITCH PLAYER 
-    // ========================================================= 
-    const twOptions = { 
-        width: '400', 
-        height: '300', 
-        channel: CHANNEL_NAME, 
-        muted: true, 
-        parent: ["blqyed.github.io", window.location.hostname] 
-    }; 
+    // =========================================================
+    // CONFIGURATION
+    // =========================================================
 
-    const twPlayer = new Twitch.Player("twitch-frame", twOptions); 
+    const CHANNEL_NAME = 'fraudvlent';
 
-    // ========================================================= 
-    // DOM ELEMENTS 
-    // ========================================================= 
-    const vid = document.getElementById('private-feed'); 
-    const gate = document.getElementById('gate'); 
-    const audioBtn = document.getElementById('btn-audio-unlock');
-    const twitchBox = document.getElementById('twitch-mini-box');
-    const fullscreenBtn = document.getElementById('custom-fullscreen-btn');
-    
-    vid.muted = true; 
+    const STREAM_SOURCE =
+        'https://rain-fields-primarily-settlement.trycloudflare.com/live/watchparty/whep';
+
+
+    // =========================================================
+    // TWITCH PLAYER
+    // =========================================================
+
+    const twOptions = {
+        width: '400',
+        height: '300',
+        channel: CHANNEL_NAME,
+        muted: true,
+        parent: [
+            "blqyed.github.io",
+            window.location.hostname
+        ]
+    };
+
+    const twPlayer =
+        new Twitch.Player(
+            "twitch-frame",
+            twOptions
+        );
+
+
+    // =========================================================
+    // DOM ELEMENTS
+    // =========================================================
+
+    const vid =
+        document.getElementById('private-feed');
+
+    const gate =
+        document.getElementById('gate');
+
+    const audioBtn =
+        document.getElementById('btn-audio-unlock');
+
+    const twitchBox =
+        document.getElementById('twitch-mini-box');
+
+    const fullscreenBtn =
+        document.getElementById('custom-fullscreen-btn');
+
+
+    // =========================================================
+    // STATE
+    // =========================================================
+
+    vid.muted = true;
 
     let systemUnlocked = false;
+
     let keepTwitchAliveInterval = null;
+
     let visualFullscreen = false;
 
-    // ========================================================= 
-    // MEDIAMTX WEBRTC READER 
-    // ========================================================= 
-    let webrtcReader = new MediaMTXWebRTCReader({ 
-        url: STREAM_SOURCE, 
 
-        onError: (err) => { 
-            console.error(err); 
-        }, 
+    // =========================================================
+    // MEDIAMTX WEBRTC
+    // =========================================================
 
-        onTrack: (evt) => { 
-            vid.srcObject = evt.streams[0]; 
-        }, 
+    let webrtcReader =
+        new MediaMTXWebRTCReader({
 
-    }); 
-    
-    // ========================================================= 
-    // MASTER STREAM UNLOCK ENGINE
-    // ========================================================= 
-    function unlockAlternativeStream() { 
+            url: STREAM_SOURCE,
+
+            onError: (err) => {
+                console.error(err);
+            },
+
+            onTrack: (evt) => {
+                vid.srcObject =
+                    evt.streams[0];
+            },
+
+        });
+
+
+    // =========================================================
+    // UNLOCK ALTERNATIVE STREAM
+    // =========================================================
+
+    function unlockAlternativeStream() {
+
         systemUnlocked = true;
-        
-        audioBtn.innerHTML = "✨ Viewing Alternative Livestream";
+
+        audioBtn.innerHTML =
+            "✨ Viewing Alternative Livestream";
+
         audioBtn.classList.add('activated');
-        audioBtn.onclick = null; 
-        
-        vid.muted = false; 
-        vid.controls = true; 
-        
+
+        audioBtn.onclick = null;
+
+        vid.muted = false;
+
+        vid.controls = true;
+
+
         if (twPlayer) {
-            twPlayer.setMuted(false); 
-            twPlayer.setVolume(0.01); 
+
+            twPlayer.setMuted(false);
+
+            twPlayer.setVolume(0.01);
+
             twPlayer.play();
+
         }
-        
-        vid.play().catch(err => 
+
+
+        vid.play().catch(err => {
+
             console.log(
-                "User interaction play bypass applied:", 
+                "User interaction play bypass applied:",
                 err
-            )
-        );
-    } 
-    
-    // ========================================================= 
-    // FORCE TWITCH PLAYER TO STAY ALIVE
-    // ========================================================= 
+            );
+
+        });
+
+    }
+
+
+    // =========================================================
+    // TWITCH KEEP ALIVE
+    // =========================================================
+
     function keepTwitchAlive() {
 
-        // IMPORTANT:
-        // During visual fullscreen we deliberately DO NOT
-        // force Twitch to play. This lets Twitch determine
-        // its own state naturally.
-        if (visualFullscreen) {
+        if (!twPlayer) {
             return;
         }
 
-        if (twPlayer && twPlayer.isPaused()) {
+        if (twPlayer.isPaused()) {
 
-            console.log("Twitch was paused, forcing play...");
+            console.log(
+                "Twitch was paused, forcing play..."
+            );
 
             twPlayer.play();
-            
+
             if (twPlayer.getMuted()) {
 
                 twPlayer.setMuted(false);
+
                 twPlayer.setVolume(0.01);
 
             }
+
         }
+
     }
-    
-    // ========================================================= 
-    // TWITCH VERIFICATION CONTROL SYSTEM
-    // ========================================================= 
+
+
+    // =========================================================
+    // TWITCH VERIFICATION CONTROL
+    // =========================================================
+
     twPlayer.addEventListener(
-        Twitch.Player.READY, 
-        () => { 
+        Twitch.Player.READY,
+        () => {
 
             twPlayer.play();
-            
-            keepTwitchAliveInterval = setInterval(
-                keepTwitchAlive, 
-                500
-            );
-        
+
+
+            /*
+             * Normal-mode Twitch keep-alive.
+             */
+            keepTwitchAliveInterval =
+                setInterval(
+                    keepTwitchAlive,
+                    500
+                );
+
+
             twPlayer.addEventListener(
-                Twitch.Player.PLAY, 
+                Twitch.Player.PLAY,
                 () => {
-                    console.log("Twitch Status: PLAYING");
+
+                    console.log(
+                        "Twitch Status: PLAYING"
+                    );
+
                 }
             );
-        
+
+
             twPlayer.addEventListener(
-                Twitch.Player.PAUSE, 
+                Twitch.Player.PAUSE,
                 () => {
 
                     console.log(
                         "Twitch Status: PAUSED"
                     );
 
-                    // IMPORTANT:
-                    // During visual fullscreen we let Twitch
-                    // decide whether playback can continue.
+                    /*
+                     * During the visibility experiment,
+                     * let Twitch naturally decide its state.
+                     */
                     if (!visualFullscreen) {
+
                         setTimeout(() => {
+
                             twPlayer.play();
+
                         }, 100);
+
                     }
 
                 }
             );
-        
-            // Main verification loop
-            setInterval(() => { 
 
-                const twitchPaused = twPlayer.isPaused(); 
-            
-                // IMPORTANT:
-                // Don't force Twitch during visual fullscreen.
-                if (twitchPaused && !visualFullscreen) {
+
+            /*
+             * Main verification loop.
+             */
+            setInterval(() => {
+
+                const twitchPaused =
+                    twPlayer.isPaused();
+
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * During visual fullscreen we do NOT
+                 * force Twitch to play.
+                 *
+                 * This lets us determine whether the
+                 * approximately 25%-visible embed can
+                 * naturally remain active.
+                 */
+                if (
+                    twitchPaused &&
+                    !visualFullscreen
+                ) {
 
                     console.log(
                         "Verification loop detected pause - forcing play"
@@ -394,53 +544,70 @@
                     twPlayer.play();
 
                     if (twPlayer.getMuted()) {
+
                         twPlayer.setMuted(false);
+
                         twPlayer.setVolume(0.01);
+
                     }
 
                 }
-            
+
+
+                /*
+                 * Keep private stream playing.
+                 */
                 if (systemUnlocked) {
 
-                    gate.style.display = 'none'; 
-                
-                    if (vid.paused) { 
+                    gate.style.display =
+                        'none';
+
+
+                    if (vid.paused) {
 
                         vid.play().catch(
                             err => console.log(
                                 "Background playback loop stabilization:",
                                 err
                             )
-                        ); 
+                        );
 
-                    } 
+                    }
 
                     vid.muted = false;
 
                 } else {
 
-                    if (twitchPaused && !systemUnlocked) { 
+                    if (
+                        twitchPaused &&
+                        !systemUnlocked
+                    ) {
 
-                        gate.style.display = 'flex'; 
-                        vid.pause(); 
+                        gate.style.display =
+                            'flex';
 
-                    } else { 
+                        vid.pause();
 
-                        gate.style.display = 'none'; 
-                        vid.muted = true; 
+                    } else {
 
-                    } 
+                        gate.style.display =
+                            'none';
 
-                } 
+                        vid.muted = true;
 
-            }, 250); 
+                    }
+
+                }
+
+            }, 250);
 
         }
-    ); 
-    
-    // ========================================================= 
+    );
+
+
+    // =========================================================
     // VISUAL FULLSCREEN
-    // ========================================================= 
+    // =========================================================
 
     function enterVisualFullscreen() {
 
@@ -450,16 +617,32 @@
 
         visualFullscreen = true;
 
-        vid.classList.add('visual-fullscreen');
-        document.body.classList.add('private-visual-fullscreen');
-        fullscreenBtn.classList.add('visual-fullscreen-button');
+        vid.classList.add(
+            'visual-fullscreen'
+        );
 
-        fullscreenBtn.innerHTML = '⛶ Exit Fullscreen';
+        document.body.classList.add(
+            'private-visual-fullscreen'
+        );
+
+        fullscreenBtn.classList.add(
+            'visual-fullscreen-button'
+        );
+
+        fullscreenBtn.innerHTML =
+            '⛶ Exit Fullscreen';
+
 
         console.log(
-            'Entered VISUAL fullscreen - Twitch left to manage itself'
+            'Entered VISUAL fullscreen'
         );
+
+        console.log(
+            'Twitch visibility test: approximately 25%'
+        );
+
     }
+
 
     function exitVisualFullscreen() {
 
@@ -469,48 +652,68 @@
 
         visualFullscreen = false;
 
-        vid.classList.remove('visual-fullscreen');
-        document.body.classList.remove('private-visual-fullscreen');
-        fullscreenBtn.classList.remove('visual-fullscreen-button');
+        vid.classList.remove(
+            'visual-fullscreen'
+        );
 
-        fullscreenBtn.innerHTML = '⛶ Fullscreen';
+        document.body.classList.remove(
+            'private-visual-fullscreen'
+        );
+
+        fullscreenBtn.classList.remove(
+            'visual-fullscreen-button'
+        );
+
+        fullscreenBtn.innerHTML =
+            '⛶ Fullscreen';
+
 
         console.log(
             'Exited VISUAL fullscreen'
         );
 
-        // Once we're back in normal mode, resume the
-        // normal Twitch keep-alive behavior.
-        setTimeout(() => {
-            if (twPlayer && twPlayer.isPaused()) {
-                twPlayer.play();
-            }
-        }, 100);
     }
+
 
     function toggleVisualFullscreen() {
 
         if (visualFullscreen) {
+
             exitVisualFullscreen();
+
         } else {
+
             enterVisualFullscreen();
+
         }
 
     }
 
-    // Custom fullscreen button.
+
+    // =========================================================
+    // CUSTOM FULLSCREEN BUTTON
+    // =========================================================
+
     fullscreenBtn.addEventListener(
         'click',
         toggleVisualFullscreen
     );
 
-    // Double-clicking the private video toggles visual fullscreen.
+
+    // =========================================================
+    // DOUBLE CLICK FULLSCREEN
+    // =========================================================
+
     vid.addEventListener(
         'dblclick',
         toggleVisualFullscreen
     );
 
-    // Escape exits visual fullscreen.
+
+    // =========================================================
+    // ESCAPE
+    // =========================================================
+
     document.addEventListener(
         'keydown',
         (event) => {
@@ -527,40 +730,55 @@
         }
     );
 
-    // ========================================================= 
-    // ADDITIONAL SAFEGUARDS 
-    // ========================================================= 
 
-    // If the tab becomes visible again, normally resume Twitch.
-    // During visual fullscreen we deliberately leave Twitch alone.
+    // =========================================================
+    // PAGE VISIBILITY
+    // =========================================================
+
     document.addEventListener(
         'visibilitychange',
         () => {
 
-            if (!document.hidden && !visualFullscreen) {
+            /*
+             * During visual fullscreen,
+             * don't interfere with Twitch's state.
+             */
+            if (
+                !document.hidden &&
+                !visualFullscreen
+            ) {
 
                 setTimeout(() => {
+
                     twPlayer.play();
+
                 }, 100);
 
             }
 
         }
     );
-    
+
+
+    // =========================================================
+    // WINDOW LOAD
+    // =========================================================
+
     window.addEventListener(
         'load',
         () => {
 
             setTimeout(() => {
+
                 twPlayer.play();
+
             }, 1000);
 
         }
     );
 
-</script> 
+</script>
 ```
 
-</body> 
+</body>
 </html>
