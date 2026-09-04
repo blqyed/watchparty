@@ -109,8 +109,8 @@
         min-height: 300px;
 
         /*
-         * Keep Twitch above the private stream for the
-         * visibility-threshold experiment.
+         * Twitch remains above the private video during
+         * the visibility-threshold experiment.
          */
         z-index: 99999;
 
@@ -134,20 +134,20 @@
     }
 
     /*
-     * 40% VISIBILITY TEST
+     * 45% VISIBILITY TEST
      *
-     * Twitch player is approximately 400px wide.
+     * Twitch box is approximately 400px wide.
      *
-     * 40% of 400px = 160px.
+     * 45% of 400px = 180px.
      *
-     * Moving the 400px box 240px beyond the right edge
-     * leaves approximately 160px visible.
+     * Moving it approximately 220px to the right
+     * leaves approximately 180px visible.
      *
-     * 160 / 400 = 40%
+     * 180 / 400 = 45%
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
-        right: -240px;
+        right: -220px;
     }
 
     /* LOCK GATE */
@@ -428,8 +428,8 @@
         }
 
         /*
-         * During visual fullscreen, allow Twitch to manage
-         * its own state for the visibility experiment.
+         * During visual fullscreen we deliberately allow
+         * Twitch to manage its own playback state.
          */
         if (visualFullscreen) {
             return;
@@ -631,7 +631,7 @@
         );
 
         console.log(
-            'Twitch visibility test: approximately 40%'
+            'Twitch visibility test: approximately 45%'
         );
 
     }
