@@ -97,7 +97,7 @@
     .twitch-mini-box {
         position: fixed;
 
-        /* Flush with the top edge */
+        /* Flush with top edge */
         top: 0;
 
         right: 25px;
@@ -108,10 +108,7 @@
         min-width: 400px;
         min-height: 300px;
 
-        /*
-         * Twitch remains above the private video during
-         * the visibility-threshold experiment.
-         */
+        /* Twitch remains above the private video */
         z-index: 99999;
 
         background: #000;
@@ -136,14 +133,10 @@
     /*
      * 45% VISIBILITY TEST
      *
-     * Twitch box is approximately 400px wide.
+     * Twitch player ≈ 400px wide.
      *
-     * 45% of 400px = 180px.
-     *
-     * Moving it approximately 220px to the right
-     * leaves approximately 180px visible.
-     *
-     * 180 / 400 = 45%
+     * 45% ≈ 180px visible.
+     * Shift right ≈ 220px.
      */
     body.private-visual-fullscreen
     .twitch-mini-box {
@@ -244,7 +237,7 @@
     <div id="twitch-frame"></div>
 </div>
 
-<!-- PRIVATE STREAM -->
+<!-- MAIN PRIVATE STREAM -->
 <div
     class="theater-stage"
     id="portal"
@@ -512,6 +505,7 @@
             );
 
 
+            // Main verification loop
             setInterval(() => {
 
                 const twitchPaused =
@@ -547,9 +541,7 @@
                 }
 
 
-                /*
-                 * Keep private stream playing.
-                 */
+                // Keep private stream playing
                 if (systemUnlocked) {
 
                     gate.style.display =
@@ -684,7 +676,7 @@
 
 
     // =========================================================
-    // FULLSCREEN BUTTON
+    // CUSTOM FULLSCREEN BUTTON
     // =========================================================
 
     fullscreenBtn.addEventListener(
