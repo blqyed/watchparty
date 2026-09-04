@@ -301,30 +301,28 @@
                                document.msFullscreenElement;
             
             if (isFullscreen) {
-                console.log("Entered fullscreen - ensuring Twitch stays visible");
-                // Move Twitch player to be a child of the fullscreen element if possible
-                if (isFullscreen !== twitchBox) {
-                    // Keep Twitch box visible by moving it to the fullscreen element
-                    isFullscreen.appendChild(twitchBox);
-                    twitchBox.style.display = 'block';
-                }
-                
-                // Force Twitch to keep playing
-                setTimeout(() => {
-                    twPlayer.play();
-                    keepTwitchAlive();
-                }, 100);
-            } else {
-                console.log("Exited fullscreen - restoring Twitch position");
-                // Restore Twitch player to body when exiting fullscreen
-                document.body.appendChild(twitchBox);
-                twitchBox.style.display = 'block';
-                
-                // Ensure Twitch is still playing
-                setTimeout(() => {
-                    twPlayer.play();
-                }, 100);
-            }
+    console.log("Entered fullscreen - leaving Twitch player untouched");
+
+    // DO NOT move twitchBox into the fullscreen element.
+    // Twitch stays in its normal DOM position.
+
+    setTimeout(() => {
+        twPlayer.play();
+        keepTwitchAlive();
+    }, 100);
+
+} else {
+    console.log("Exited fullscreen - Twitch position unchanged");
+
+    // DO NOT move twitchBox back to body.
+    // It never left its original position.
+
+    twitchBox.style.display = 'block';
+
+    setTimeout(() => {
+        twPlayer.play();
+    }, 100);
+}
         }
         
         // Override video fullscreen to keep Twitch visible
